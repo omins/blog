@@ -1,3 +1,3 @@
 # omin's blog
 
-A Personal blog based on [this templateg](https://github.com/shadcn/next-contentlayer)
+A Personal blog based on [this template](https://github.com/shadcn/next-contentlayer)
