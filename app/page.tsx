@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { allPosts } from "contentlayer/generated";
+import PostCard from "@/components/post-card";
 
 export default function Home() {
+  console.log(allPosts);
+
   return (
-    <div className="prose dark:prose-invert">
+    <div>
       {allPosts.map((post) => (
-        <article key={post._id}>
-          <Link href={post.url_path}>
-            <h2>{post.title}</h2>
-          </Link>
-          {post.description && <p>{post.description}</p>}
-        </article>
+        <PostCard post={post} key={post._id} />
       ))}
     </div>
   );
