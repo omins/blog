@@ -18,3 +18,4 @@ For example, `fix/bug-no-1` branch can contains `fix: useEffect's wrong dependen
 - refactor: Refactor the code to a better version and with same result.
 - revert: Reverting existing commits or merged PRs.
 - docs: Updating docs like `README.md`
+- create: Create new component or others.
