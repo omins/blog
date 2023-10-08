@@ -15,20 +15,23 @@ const computedFields = {
 
 export const Post = defineDocumentType(() => ({
   name: "Post",
-  filePathPattern: `**/**/*.mdx`,
+  filePathPattern: `**/*.mdx`,
   contentType: "mdx",
   fields: {
     title: {
       type: "string",
       required: true,
     },
-    date: {
-      type: "date",
+    publishedAt: {
+      type: "string",
       required: true,
     },
     category: {
       type: "string",
       required: true,
+    },
+    image: {
+      type: "string",
     },
     description: {
       type: "string",
@@ -36,6 +39,9 @@ export const Post = defineDocumentType(() => ({
     tags: {
       type: "list",
       of: { type: "string" },
+    },
+    series: {
+      type: "string",
     },
   },
   computedFields,
