@@ -32,6 +32,7 @@ export const Post = defineDocumentType(() => ({
     },
     image: {
       type: "string",
+      description: "The image with local path. Use for SEO, thumbnail, etc.",
     },
     description: {
       type: "string",
