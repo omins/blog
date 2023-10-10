@@ -1,12 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Theme } from "@/constants";
 import { useTheme } from "next-themes";
 import Moon from "./icons/moon";
 import Sun from "./icons/sun";
 
-export function ModeToggle() {
+export default function ModeToggle() {
   const { setTheme, theme } = useTheme();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, [theme]);
+
+  if (!isMounted) return null;
 
   return (
     <button

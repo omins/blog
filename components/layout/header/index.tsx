@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/icons/logo";
-import { ModeToggle } from "@/components/mode-toggle";
+import ModeToggle from "@/components/mode-toggle";
 
 export default function Header() {
   return (
