@@ -1,4 +1,6 @@
-import { LayoutProps } from "@/.next/types/app/layout";
+type LayoutProps = {
+  children: React.ReactNode;
+};
 
 export default function Layout({ children }: LayoutProps) {
   return <div>{children}</div>;

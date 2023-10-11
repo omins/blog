@@ -1,6 +1,9 @@
-import { LayoutProps } from "@/.next/types/app/layout";
 import { getAllCategoriesWithCount } from "@/lib/post";
 import CategoryChip from "@/components/category-chip";
+
+type LayoutProps = {
+  children: React.ReactNode;
+};
 
 export default function MainLayout({ children }: LayoutProps) {
   const categories = getAllCategoriesWithCount();
