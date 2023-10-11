@@ -3,7 +3,10 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata = {
-  title: "OMIN's blog",
+  title: {
+    template: `OMIN's %s`,
+    default: "OMIN's Blog",
+  },
   description: "주로 학습한 내용 혹은 회고글을 올립니다.",
 };
 
