@@ -1,5 +1,5 @@
-import { allPosts } from "@/.contentlayer/generated";
 import { CATEGORY_ALL } from "@/constants/category";
+import { allPosts } from "contentlayer/generated";
 
 type CategoryWithCount = {
   [key: string]: number;
@@ -32,4 +32,10 @@ export function getAllCategoriesWithCount(): {
   };
 
   return [categoryAll, ...categoriesWithCountArray];
+}
+
+export function getPostsByCategory(category: string) {
+  const posts = allPosts.filter((post) => post.category === category);
+
+  return posts;
 }
