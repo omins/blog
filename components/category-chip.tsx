@@ -33,8 +33,12 @@ function getLabel(name: string, count: number) {
 }
 
 function isSelected(name: string, segments: string[]) {
-  return (
-    segments[segments.length - 1] === name ||
-    (name === CATEGORY_ALL && segments.length === 0)
-  );
+  if (
+    segments.includes(name) ||
+    (name === CATEGORY_ALL && !segments.includes("category"))
+  ) {
+    return true;
+  }
+
+  return false;
 }
