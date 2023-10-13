@@ -9,10 +9,12 @@ export function isValidPage(pageNo: number, totalLengthOfPosts: number) {
 }
 
 export function renderCategoryPageLink(pageNo: number, slug: string) {
+  if (pageNo === 1) return `/category/${slug}`;
   return `/category/${slug}/pages/${pageNo}`;
 }
 
 export function renderPageLink(pageNo: number) {
+  if (pageNo === 1) return "/";
   return `/pages/${pageNo}`;
 }
 
