@@ -1,4 +1,4 @@
-import { getAllCategoriesWithCount } from "@/lib/post";
+import { getAllCategoriesWithCount } from "@/lib/posts-utils";
 import CategoryChip from "@/components/category-chip";
 
 type LayoutProps = {

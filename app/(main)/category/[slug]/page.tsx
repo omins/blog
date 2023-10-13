@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 import { CATEGORY_NAME_LABELS } from "@/constants/category";
+import { getPostsByCategory } from "@/lib/posts-utils";
 import { allPosts } from "contentlayer/generated";
-import PostCard from "@/components/post-card";
-import PostList from "@/components/post-list";
+import PaginatedPostList from "@/components/layout/paginated";
 
 export const dynamicParams = false;
 
@@ -32,13 +32,14 @@ export async function generateMetadata({
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const { slug: category } = params;
-  const posts = getPostsByCategory(category);
+  const allPosts = getPostsByCategory(category);
 
-  return <PostList posts={posts} />;
-}
-
-function getPostsByCategory(category: string) {
-  const posts = allPosts.filter((post) => post.category === category);
-
-  return posts;
+  return (
+    <PaginatedPostList
+      allPosts={allPosts}
+      pageNo={1}
+      pageType="category"
+      category={category}
+    />
+  );
 }

@@ -1,6 +1,13 @@
 import { allPosts } from "contentlayer/generated";
-import PostList from "@/components/post-list";
+import PaginatedPostList from "@/components/layout/paginated";
 
 export default async function Home() {
-  return <PostList posts={allPosts} />;
+  return (
+    <PaginatedPostList
+      allPosts={allPosts}
+      pageNo={1}
+      pageType="main"
+      category={null}
+    />
+  );
 }
