@@ -6,7 +6,7 @@ import PaginatedPostList from "@/components/layout/paginated";
 
 export const dynamicParams = false;
 
-export async function generateStaticParams() {
+export function generateStaticParams() {
   const categories = allPosts.map((post) => post.category);
   const uniqueCategories = Array.from(new Set(categories));
   const params = uniqueCategories.map((category) => ({ slug: category }));
@@ -14,11 +14,11 @@ export async function generateStaticParams() {
   return params;
 }
 
-export async function generateMetadata({
+export function generateMetadata({
   params,
 }: {
   params: { slug: string };
-}): Promise<Metadata> {
+}): Metadata {
   const { slug } = params;
   const categoryName = CATEGORY_NAME_LABELS[slug];
 
