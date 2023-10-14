@@ -10,11 +10,12 @@ type Props = {
 };
 
 export default function CategoryChip({ category }: Props) {
+  const segments = useSelectedLayoutSegments();
+
   const { name, count } = category;
 
   const urlPath = getPath(name);
   const label = getLabel(name, count);
-  const segments = useSelectedLayoutSegments();
   const selected = isSelected(name, segments);
 
   return (
