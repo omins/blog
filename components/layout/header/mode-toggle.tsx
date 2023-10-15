@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Theme } from "@/constants";
 import { useTheme } from "next-themes";
-import Moon from "./icons/moon";
-import Sun from "./icons/sun";
+import Moon from "../../icons/moon";
+import Sun from "../../icons/sun";
 
 export default function ModeToggle() {
   const { setTheme, theme } = useTheme();
