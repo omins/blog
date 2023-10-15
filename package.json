@@ -11,9 +11,10 @@
     "format:write": "prettier --write \"**/*.{css,js,json,jsx,ts,tsx}\""
   },
   "dependencies": {
+    "@plaiceholder/next": "^3.0.0",
     "@tailwindcss/typography": "^0.5.9",
     "@types/node": "18.16.1",
-    "@types/react": "18.2.0",
+    "@types/react": "18.2.25",
     "@types/react-dom": "18.2.1",
     "@vercel/analytics": "^1.0.0",
     "autoprefixer": "10.4.14",
@@ -23,12 +24,14 @@
     "next": "13.5.4",
     "next-contentlayer": "0.3.2",
     "next-themes": "^0.2.1",
+    "plaiceholder": "^3.0.0",
     "postcss": "8.4.23",
     "prettier": "^3.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "sharp": "^0.32.6",
     "tailwindcss": "3.3.2",
-    "typescript": "5.0.4"
+    "typescript": "5.2.2"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
