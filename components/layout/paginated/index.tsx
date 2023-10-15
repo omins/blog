@@ -1,8 +1,8 @@
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { renderCategoryPageLink, renderPageLink } from "@/lib/pages-utils";
 import { Post } from "contentlayer/generated";
-import Pagination from "@/components/pagination";
-import PostList from "@/components/post-list";
+import Pagination from "@/components/layout/paginated/pagination";
+import PostList from "@/components/layout/post/post-list";
 
 type Props = {
   allPosts: Post[];
@@ -14,10 +14,10 @@ type Props = {
 export default function PaginatedPostList(props: Props) {
   const { allPosts, pageNo, pageType, category } = props;
 
-  const posts = allPosts.slice(
-    (pageNo - 1) * POSTS_PER_PAGE,
-    pageNo * POSTS_PER_PAGE,
-  );
+  const start = (pageNo - 1) * POSTS_PER_PAGE;
+  const end = pageNo * POSTS_PER_PAGE;
+
+  const posts = allPosts.slice(start, end);
 
   return (
     <div>

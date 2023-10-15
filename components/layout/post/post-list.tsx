@@ -1,4 +1,4 @@
-import { Post } from "@/.contentlayer/generated";
+import { Post } from "contentlayer/generated";
 import PostCard from "./post-card";
 
 type Props = {
