@@ -36,7 +36,7 @@ export function generateMetadata({
 
   return {
     title: `Page - ${id}`,
-    description: `Page`,
+    description: `OMIN's Blog Page ${id}`,
   };
 }
 
