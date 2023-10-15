@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { CATEGORY_NAME_LABELS } from "@/constants/category";
 import { getPostsByCategory } from "@/lib/posts-utils";
 import { allPosts } from "contentlayer/generated";
-import PaginatedPostList from "@/components/layout/paginated";
+import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
 

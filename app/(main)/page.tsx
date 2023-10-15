@@ -1,5 +1,5 @@
 import { allPosts } from "contentlayer/generated";
-import PaginatedPostList from "@/components/layout/paginated";
+import PaginatedPostList from "@/components/layout/paginated-list";
 
 export default async function Home() {
   return (

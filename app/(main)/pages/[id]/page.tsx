@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { allPosts } from "@/.contentlayer/generated";
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { getPages, isValidPage } from "@/lib/pages-utils";
-import PaginatedPostList from "@/components/layout/paginated";
+import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
 

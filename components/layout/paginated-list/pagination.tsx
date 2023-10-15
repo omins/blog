@@ -32,8 +32,10 @@ export default function Pagination({
             key={i}
             href={renderPageLink(page as number)}
             className={`${
-              page === currentPage ? "text-green" : "text-black dark:text-white"
-            } mx-1 rounded-full px-4 py-2 text-sm font-semibold no-underline`}
+              page === currentPage
+                ? "rounded-full border-2 border-green text-base font-semibold text-green"
+                : "text-sm text-black dark:text-white"
+            } mx-1 rounded-full px-3 py-1 font-semibold no-underline`}
           >
             {page}
           </Link>

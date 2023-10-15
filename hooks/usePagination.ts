@@ -1,6 +1,6 @@
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { getPages } from "@/lib/pages-utils";
-import { dotts } from "@/components/layout/paginated/pagination";
+import { dotts } from "@/components/layout/paginated-list/pagination";
 
 export default function usePagination(totalItems: number, currentPage: number) {
   const totalPages = Math.ceil(totalItems / POSTS_PER_PAGE);

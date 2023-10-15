@@ -1,7 +1,7 @@
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { renderCategoryPageLink, renderPageLink } from "@/lib/pages-utils";
 import { Post } from "contentlayer/generated";
-import Pagination from "@/components/layout/paginated/pagination";
+import Pagination from "@/components/layout/paginated-list/pagination";
 import PostList from "@/components/layout/post/post-list";
 
 type Props = {

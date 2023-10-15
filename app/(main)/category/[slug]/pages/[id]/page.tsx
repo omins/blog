@@ -7,7 +7,7 @@ import {
   getAllCategoriesWithCount,
   getPostsByCategory,
 } from "@/lib/posts-utils";
-import PaginatedPostList from "@/components/layout/paginated";
+import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
 
