@@ -1,3 +1,4 @@
+import rehypePrism from "@mapbox/rehype-prism";
 import { defineDocumentType, makeSource } from "contentlayer/source-files";
 import { getSlugWithoutCategoryPath } from "./lib/mdx";
 
@@ -51,4 +52,5 @@ export const Post = defineDocumentType(() => ({
 export default makeSource({
   contentDirPath: "./posts",
   documentTypes: [Post],
+  mdx: { rehypePlugins: [rehypePrism] },
 });

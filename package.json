@@ -11,6 +11,7 @@
     "format:write": "prettier --write \"**/*.{css,js,json,jsx,ts,tsx}\""
   },
   "dependencies": {
+    "@mapbox/rehype-prism": "^0.8.0",
     "@plaiceholder/next": "^3.0.0",
     "@tailwindcss/typography": "^0.5.9",
     "@types/node": "18.16.1",

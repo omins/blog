@@ -1,5 +1,5 @@
 import Header from "@/components/layout/header";
-import "./globals.css";
+import "@/styles/globals.css";
 import Providers from "./providers";
 
 export const metadata = {
