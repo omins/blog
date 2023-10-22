@@ -4,7 +4,7 @@
 .prose h4,
 .prose h5,
 .prose h6 {
-  @apply scroll-mt-76pxr;
+  @apply scroll-mt-67pxr;
 }
 
 .prose .anchor {
