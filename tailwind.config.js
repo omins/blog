@@ -34,6 +34,23 @@ module.exports = {
           return values;
         })(),
       },
+      typography: (theme) => ({
+        DEFAULT: {
+          css: {
+            a: {
+              "&:not(.anchor)": {
+                color: theme("colors.green"),
+                textDecoration: "none",
+                fontWeight: "600",
+              },
+            },
+            h1: {
+              fontSize: pxToRem(32),
+            },
+            "--tw-prose-invert-body": theme("colors.gray.100"),
+          },
+        },
+      }),
     },
   },
   plugins: [require("@tailwindcss/typography")],
