@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { allPosts } from "contentlayer/generated";
+import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
 
 interface PostProps {
@@ -47,13 +48,7 @@ export default async function PostPage({ params }: PostProps) {
 
   return (
     <article className="prose max-w-none px-4 pb-6 dark:prose-invert">
-      <h1 className="mb-2">{post.title}</h1>
-      {post.description && (
-        <p className="mt-0 text-xl text-gray-600 dark:text-gray-300">
-          {post.description}
-        </p>
-      )}
-      <hr className="my-4" />
+      <Header post={post} />
       <Mdx code={post.body.code} />
     </article>
   );
