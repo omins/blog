@@ -47,6 +47,8 @@ module.exports = {
             h1: {
               fontSize: pxToRem(32),
             },
+            "--tw-prose-headings": theme("colors.black"),
+            "--tw-prose-body": theme("colors.gray.900"),
             "--tw-prose-invert-body": theme("colors.gray.100"),
           },
         },
