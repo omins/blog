@@ -16,7 +16,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body
         className={`mx-auto max-w-3xl bg-white text-black antialiased dark:bg-black`}
       >
