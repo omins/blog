@@ -25,8 +25,10 @@ export async function generateMetadata({
   }
 
   return {
-    title: post.title,
-    description: post.description,
+    title: {
+      absolute: post.title,
+    },
+    description: post?.description || `${post.title} - OMIN's Blog`,
   };
 }
 
