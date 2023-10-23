@@ -17,7 +17,7 @@ async function RoundedImage(props: ImageProps) {
       blurDataURL={blurDataUrl}
       placeholder="blur"
       className="image rounded-lg"
-      alt={props.alt || ""}
+      alt={props?.alt || ""}
     />
   );
 }
