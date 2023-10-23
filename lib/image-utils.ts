@@ -1,7 +1,4 @@
-import {
-  StaticImport,
-  StaticRequire,
-} from "next/dist/shared/lib/get-img-props";
+import { StaticRequire } from "next/dist/shared/lib/get-img-props";
 import { StaticImageData } from "next/image";
 import fs from "node:fs/promises";
 import path from "node:path";
