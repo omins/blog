@@ -63,7 +63,7 @@ export default makeSource({
         {
           behavior: "wrap",
           properties: {
-            className: "anchor",
+            className: "heading-anchor",
           },
         },
       ],
