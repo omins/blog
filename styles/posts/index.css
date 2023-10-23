@@ -1,3 +1,7 @@
 @import "./headings.css";
 @import "./syntax-highlight.css";
 @import "./callout.css";
+
+.prose a:not(.heading-anchor) {
+  @apply font-bold text-green no-underline;
+}
