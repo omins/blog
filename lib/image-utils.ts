@@ -2,13 +2,33 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getPlaiceholder } from "plaiceholder";
 
-export const getBlurDataUrl = async (src: string) => {
-  const imagePath = path.join(process.cwd(), "public", src);
-  const file = await fs.readFile(imagePath);
-  const { base64 } = await getPlaiceholder(file, { size: 10 });
+export const getBlurDataUrl = async (src: string): Promise<string> => {
+  const buffer = isRemote(src)
+    ? await getRemoteImageBuffer(src)
+    : await getLocalImageBuffer(src);
+  const { base64 } = await getPlaiceholder(buffer, { size: 10 });
 
   return base64;
 };
+
+async function getRemoteImageBuffer(src: string): Promise<Buffer> {
+  const imageRes = await fetch(src);
+  const arrayBuffer = await imageRes.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  return buffer;
+}
+
+async function getLocalImageBuffer(src: string): Promise<Buffer> {
+  const imagePath = path.join(process.cwd(), "public", src);
+  const file = await fs.readFile(imagePath);
+
+  return file;
+}
+
+function isRemote(src: string) {
+  return src.startsWith("http");
+}
 
 export const isLocalImageFileValid = async (src: string) => {
   try {
