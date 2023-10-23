@@ -1,3 +1,8 @@
+import {
+  StaticImport,
+  StaticRequire,
+} from "next/dist/shared/lib/get-img-props";
+import { StaticImageData } from "next/image";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { getPlaiceholder } from "plaiceholder";
@@ -10,6 +15,14 @@ export const getBlurDataUrl = async (src: string): Promise<string> => {
 
   return base64;
 };
+
+export function getStringSrc(imgSrc: string | StaticRequire | StaticImageData) {
+  return typeof imgSrc === "string"
+    ? imgSrc
+    : (imgSrc as StaticRequire).default !== undefined
+    ? (imgSrc as StaticRequire).default.src
+    : (imgSrc as StaticImageData).src;
+}
 
 async function getRemoteImageBuffer(src: string): Promise<Buffer> {
   const imageRes = await fetch(src);

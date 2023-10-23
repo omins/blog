@@ -1,14 +1,9 @@
 import Image, { ImageProps } from "next/image";
-import { getBlurDataUrl } from "@/lib/image-utils";
+import { getBlurDataUrl, getStringSrc } from "@/lib/image-utils";
 import { useMDXComponent } from "next-contentlayer/hooks";
 
 async function RoundedImage(props: ImageProps) {
-  const { src } = props;
-
-  if (typeof src !== "string") {
-    return null;
-  }
-
+  const src = getStringSrc(props.src);
   const blurDataUrl = await getBlurDataUrl(src);
 
   return (
