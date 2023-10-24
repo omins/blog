@@ -2,7 +2,7 @@ import Image, { ImageProps } from "next/image";
 import { getBlurDataUrl, getStringSrc } from "@/lib/image-utils";
 import { useMDXComponent } from "next-contentlayer/hooks";
 
-async function RoundedImage(props: ImageProps) {
+async function MDXImage(props: ImageProps) {
   const src = getStringSrc(props.src);
   const blurDataUrl = await getBlurDataUrl(src);
 
@@ -27,7 +27,7 @@ function Callout(props: { emoji?: string; children: React.ReactNode }) {
 }
 
 const components = {
-  Image: (props: ImageProps) => <RoundedImage {...props} />,
+  Image: (props: ImageProps) => <MDXImage {...props} />,
   Callout,
 };
 
