@@ -42,7 +42,7 @@ export function generateMetadata({
   params: { slug: string; id: string };
 }): Metadata {
   const { slug, id } = params;
-  const categoryName = CATEGORY_NAME_LABELS[slug];
+  const categoryName = CATEGORY_NAME_LABELS[slug] || slug;
 
   return {
     title: `${categoryName} - Page ${id}`,

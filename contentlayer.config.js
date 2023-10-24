@@ -1,4 +1,7 @@
+import rehypePrism from "@mapbox/rehype-prism";
 import { defineDocumentType, makeSource } from "contentlayer/source-files";
+import rehypeAutoLinkHeadings from "rehype-autolink-headings";
+import rehypeSlug from "rehype-slug";
 import { getSlugWithoutCategoryPath } from "./lib/mdx";
 
 /** @type {import('contentlayer/source-files').ComputedFields} */
@@ -51,4 +54,19 @@ export const Post = defineDocumentType(() => ({
 export default makeSource({
   contentDirPath: "./posts",
   documentTypes: [Post],
+  mdx: {
+    rehypePlugins: [
+      rehypePrism,
+      rehypeSlug,
+      [
+        rehypeAutoLinkHeadings,
+        {
+          behavior: "wrap",
+          properties: {
+            className: "heading-anchor",
+          },
+        },
+      ],
+    ],
+  },
 });

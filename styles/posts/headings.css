@@ -1,0 +1,30 @@
+.prose h1 {
+  @apply text-[2rem];
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  @apply scroll-mt-67pxr;
+}
+
+.prose .heading-anchor {
+  @apply no-underline;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+.prose .heading-anchor:hover {
+  @apply underline;
+  cursor: pointer;
+}
+
+.prose .heading-anchor:hover:after {
+  display: inline-block;
+  @apply text-gray-400 dark:text-gray-300;
+  padding-left: 0.5rem;
+  content: "#";
+}

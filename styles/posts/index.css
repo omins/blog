@@ -1,0 +1,8 @@
+@import "./headings.css";
+@import "./syntax-highlight.css";
+@import "./callout.css";
+@import "./image.css";
+
+.prose a:not(.heading-anchor) {
+  @apply font-bold text-green no-underline;
+}

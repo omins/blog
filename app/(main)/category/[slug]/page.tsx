@@ -20,7 +20,7 @@ export function generateMetadata({
   params: { slug: string };
 }): Metadata {
   const { slug } = params;
-  const categoryName = CATEGORY_NAME_LABELS[slug];
+  const categoryName = CATEGORY_NAME_LABELS[slug] || slug;
 
   const posts = getPostsByCategory(slug);
 
