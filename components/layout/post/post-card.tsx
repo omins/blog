@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Post } from "@/.contentlayer/generated";
-import { DEFAULT_IMAGE_URL } from "@/constants";
-import { getBlurDataUrl, isLocalImageFileValid } from "@/lib/image-utils";
+import { DEFAULT_BLUR_DATA_URL, DEFAULT_IMAGE_URL } from "@/constants";
+import { getBlurDataUrl } from "@/lib/image-utils";
 
 type Props = {
   post: Post;
@@ -10,12 +10,9 @@ type Props = {
 
 export default async function PostCard({ post }: Props) {
   const imageUrl = post?.image || DEFAULT_IMAGE_URL;
-
-  if (!(await isLocalImageFileValid(imageUrl))) {
-    return null;
-  }
-
-  const blurDataUrl = await getBlurDataUrl(imageUrl);
+  const blurDataUrl = post?.image
+    ? await getBlurDataUrl(post.image)
+    : DEFAULT_BLUR_DATA_URL;
 
   return (
     <Link href={post.url_path} className="flex p-2">
@@ -33,7 +30,7 @@ export default async function PostCard({ post }: Props) {
           </div>
           <Image
             fill
-            src={post?.image || DEFAULT_IMAGE_URL}
+            src={imageUrl}
             alt={post.title}
             className="rounded-lg object-cover"
             loading="lazy"
