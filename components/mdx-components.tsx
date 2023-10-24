@@ -17,10 +17,10 @@ async function RoundedImage(props: ImageProps) {
   );
 }
 
-function Callout(props: { emoji: string; children: React.ReactNode }) {
+function Callout(props: { emoji?: string; children: React.ReactNode }) {
   return (
     <div className="flex w-full items-center rounded bg-gray-200 p-1 px-4 py-4 text-sm text-gray-900  dark:border dark:border-gray-100 dark:bg-gray-700 dark:text-gray-200">
-      <div className="mr-4 flex w-4 items-center">{props.emoji}</div>
+      <div className="mr-4 flex w-4 items-center">{props?.emoji || "💡"}</div>
       <div className="callout w-full">{props.children}</div>
     </div>
   );
