@@ -11,6 +11,7 @@
     "format:write": "prettier --write \"**/*.{css,js,json,jsx,ts,tsx}\""
   },
   "dependencies": {
+    "@mapbox/rehype-prism": "^0.8.0",
     "@plaiceholder/next": "^3.0.0",
     "@tailwindcss/typography": "^0.5.9",
     "@types/node": "18.16.1",
@@ -29,6 +30,8 @@
     "prettier": "^3.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "rehype-autolink-headings": "^7.0.0",
+    "rehype-slug": "^6.0.0",
     "sharp": "^0.32.6",
     "tailwindcss": "3.3.2",
     "typescript": "5.2.2"

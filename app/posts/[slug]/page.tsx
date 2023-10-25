@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { allPosts } from "contentlayer/generated";
+import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
 
 interface PostProps {
@@ -25,8 +26,10 @@ export async function generateMetadata({
   }
 
   return {
-    title: post.title,
-    description: post.description,
+    title: {
+      absolute: post.title,
+    },
+    description: post?.description || `${post.title} - OMIN's Blog`,
   };
 }
 
@@ -44,14 +47,8 @@ export default async function PostPage({ params }: PostProps) {
   }
 
   return (
-    <article className="prose py-6 dark:prose-invert">
-      <h1 className="mb-2">{post.title}</h1>
-      {post.description && (
-        <p className="mt-0 text-xl text-slate-700 dark:text-slate-200">
-          {post.description}
-        </p>
-      )}
-      <hr className="my-4" />
+    <article className="prose max-w-none px-4 pb-6 dark:prose-invert">
+      <Header post={post} />
       <Mdx code={post.body.code} />
     </article>
   );
