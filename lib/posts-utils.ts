@@ -13,30 +13,31 @@ export function getPosts(
   sortBy: SortBy = "publishedAt",
   order: Order = "desc",
 ): Post[] {
-  let posts: Post[] = [...allPosts];
+  let filteredPosts =
+    category === CATEGORY_ALL
+      ? allPosts
+      : allPosts.filter((post) => post.category === category);
 
-  if (category !== CATEGORY_ALL) {
-    posts = posts.filter((post) => post.category === category);
-  }
-
-  posts = sortPosts(posts, sortBy, order);
-  return posts;
+  return sortPosts([...filteredPosts], sortBy, order);
 }
 
 function sortPosts(posts: Post[], sortBy: SortBy, order: Order): Post[] {
-  return posts.sort((a, b) => {
-    const valueA = getValueForSort(a, sortBy);
-    const valueB = getValueForSort(b, sortBy);
+  return [...posts].sort((postA, postB) => {
+    const valueA = getValueForSort(postA, sortBy);
+    const valueB = getValueForSort(postB, sortBy);
 
     return compareValues(valueA, valueB, order);
   });
 }
 
-function getValueForSort(post: Post, sortBy: SortBy) {
-  if (sortBy === "publishedAt") {
-    return new Date(post.publishedAt);
-  } else if (sortBy === "title") {
-    return post.title;
+function getValueForSort(post: Post, sortBy: SortBy): string | Date {
+  switch (sortBy) {
+    case "publishedAt":
+      return new Date(post.publishedAt);
+    case "title":
+      return post.title;
+    default:
+      return new Date(post.publishedAt);
   }
 }
 
