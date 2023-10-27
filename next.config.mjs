@@ -11,6 +11,7 @@ const nextConfig = {
     minimumCacheTTL: 604800,
     formats: ["image/avif", "image/webp"],
   },
+  transpilePackages: ["contentlayer", "@contentlayer/client"],
 };
 
 export default withContentlayer(withPlaiceholder(nextConfig));
