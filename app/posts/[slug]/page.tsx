@@ -47,7 +47,7 @@ export default async function PostPage({ params }: PostProps) {
   }
 
   return (
-    <article className="prose max-w-none px-4 pb-6 dark:prose-invert">
+    <article className="prose max-w-none break-words px-4 pb-6 dark:prose-invert">
       <Header post={post} />
       <Mdx code={post.body.code} />
     </article>
