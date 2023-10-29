@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { CATEGORY_ALL } from "@/constants/category";
-import { getAllCategoriesWithCount } from "@/lib/posts-utils";
+import { getAllCategoriesWithCount } from "@/lib/posts";
 import CategoryChip from "@/components/layout/category-nav/category-chip";
 
 export default function CategoryNav() {
