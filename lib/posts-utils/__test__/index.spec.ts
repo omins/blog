@@ -1,5 +1,6 @@
+import { CATEGORY_ALL } from "@/constants/category";
 import { Post } from "contentlayer/generated";
-import { Order, SortBy, sortPosts } from "..";
+import { Order, SortBy, getPosts, sortPosts } from "..";
 import { mockPosts } from "./mock";
 
 describe("sortPosts function", () => {
@@ -15,5 +16,28 @@ describe("sortPosts function", () => {
         expect(sortedValues).toEqual(answer);
       });
     }
+  }
+});
+
+describe("getPosts function", () => {
+  for (const category of [CATEGORY_ALL, "os", "web"]) {
+    it(`should return ${category} posts when category is ${category}`, () => {
+      const posts = getPosts({
+        category: category,
+        order: "asc",
+        sortBy: "publishedAt",
+        postDataSource: mockPosts,
+      });
+
+      const returedValues = posts.map((post) => post.title);
+      const answer =
+        category === CATEGORY_ALL
+          ? mockPosts.map((post) => post.title)
+          : mockPosts
+              .filter((post) => post.category === category)
+              .map((post) => post.title);
+
+      expect(returedValues).toEqual(answer);
+    });
   }
 });
