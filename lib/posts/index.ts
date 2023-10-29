@@ -8,6 +8,19 @@ type CategoryWithCount = {
 export type SortBy = "publishedAt" | "title";
 export type Order = "desc" | "asc";
 
+/**
+ * Get blog posts with provided options
+ *
+ * @example
+ * ```javascript
+ *  const posts = getPosts({ category: "web", sortBy: "publishedAt", order: "desc" });
+ * ```
+ * or you can use default values
+ *
+ * ```javascript
+ *  const posts = getPosts(); // get all posts sorted by publishedAt in descending order
+ * ```
+ */
 export function getPosts({
   category = CATEGORY_ALL,
   sortBy = "publishedAt",
@@ -18,7 +31,7 @@ export function getPosts({
   sortBy?: SortBy;
   order?: Order;
   postDataSource?: Post[];
-}): Post[] {
+} = {}): Post[] {
   let filteredPosts =
     category === CATEGORY_ALL
       ? postDataSource
