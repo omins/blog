@@ -19,3 +19,4 @@ For example, `fix/bug-no-1` branch can contains `fix: useEffect's wrong dependen
 - revert: Reverting existing commits or merged PRs.
 - docs: Updating docs like `README.md`
 - create: Create new component or others.
+- test: Write or maintain test codes.
