@@ -1,12 +1,12 @@
 import { Metadata } from "next";
 import { CATEGORY_NAME_LABELS } from "@/constants/category";
-import { getPostsByCategory } from "@/lib/posts-utils";
-import { allPosts } from "contentlayer/generated";
+import { getPosts } from "@/lib/posts";
 import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
+  const allPosts = getPosts();
   const categories = allPosts.map((post) => post.category);
   const uniqueCategories = Array.from(new Set(categories));
   const params = uniqueCategories.map((category) => ({ slug: category }));
@@ -19,10 +19,10 @@ export function generateMetadata({
 }: {
   params: { slug: string };
 }): Metadata {
-  const { slug } = params;
-  const categoryName = CATEGORY_NAME_LABELS[slug] || slug;
+  const { slug: category } = params;
+  const categoryName = CATEGORY_NAME_LABELS[category] || category;
 
-  const posts = getPostsByCategory(slug);
+  const posts = getPosts({ category });
 
   return {
     title: `${categoryName}`,
@@ -32,7 +32,7 @@ export function generateMetadata({
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const { slug: category } = params;
-  const allPosts = getPostsByCategory(category);
+  const allPosts = getPosts({ category });
 
   return (
     <PaginatedPostList
