@@ -68,6 +68,7 @@ function compareValues<T>(a: T, b: T, order: Order): number {
   }
 }
 
+// TODO: write test
 export function getAllCategoriesWithCount(): {
   name: string;
   count: number;
