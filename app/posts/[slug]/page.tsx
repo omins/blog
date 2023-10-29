@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPosts } from "@/lib/posts";
 import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
+import RelatedPosts from "@/components/related-posts";
 
 export const dynamicParams = false;
 
@@ -51,9 +52,12 @@ export default async function PostPage({ params }: PostProps) {
   }
 
   return (
-    <article className="prose max-w-none break-words px-4 pb-6 dark:prose-invert">
-      <Header post={post} />
-      <Mdx code={post.body.code} />
-    </article>
+    <>
+      <article className="prose max-w-none break-words px-4 pb-6 dark:prose-invert">
+        <Header post={post} />
+        <Mdx code={post.body.code} />
+      </article>
+      <RelatedPosts currentPost={post} />
+    </>
   );
 }
