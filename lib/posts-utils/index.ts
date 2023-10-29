@@ -8,15 +8,21 @@ type CategoryWithCount = {
 export type SortBy = "publishedAt" | "title";
 export type Order = "desc" | "asc";
 
-export function getPosts(
-  category: string = CATEGORY_ALL,
-  sortBy: SortBy = "publishedAt",
-  order: Order = "desc",
-): Post[] {
+export function getPosts({
+  category = CATEGORY_ALL,
+  sortBy = "publishedAt",
+  order = "desc",
+  postDataSource = allPosts,
+}: {
+  category?: string;
+  sortBy?: SortBy;
+  order?: Order;
+  postDataSource?: Post[];
+}): Post[] {
   let filteredPosts =
     category === CATEGORY_ALL
-      ? allPosts
-      : allPosts.filter((post) => post.category === category);
+      ? postDataSource
+      : postDataSource.filter((post) => post.category === category);
 
   return sortPosts([...filteredPosts], sortBy, order);
 }
