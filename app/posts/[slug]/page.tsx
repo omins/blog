@@ -1,8 +1,10 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { allPosts } from "contentlayer/generated";
+import { getPosts } from "@/lib/posts";
 import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
+
+export const dynamicParams = false;
 
 interface PostProps {
   params: {
@@ -11,6 +13,7 @@ interface PostProps {
 }
 
 async function getPostFromParams(params: PostProps["params"]) {
+  const allPosts = getPosts();
   const post = allPosts.find((post) => post.slug === params?.slug);
 
   return !post ? null : post;
@@ -34,6 +37,7 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams(): Promise<PostProps["params"][]> {
+  const allPosts = getPosts();
   return allPosts.map((post) => ({
     slug: post.slug,
   }));

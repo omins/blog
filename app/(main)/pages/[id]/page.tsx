@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { allPosts } from "@/.contentlayer/generated";
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { getPages, isValidPage } from "@/lib/pages-utils";
+import { getPosts } from "@/lib/posts";
 import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
@@ -16,6 +16,7 @@ type Props = {
 
 export function generateStaticParams() {
   const params: { id: string }[] = [];
+  const allPosts = getPosts();
   const totalPage = Math.ceil(allPosts.length / POSTS_PER_PAGE);
 
   const pages = getPages(totalPage);
@@ -47,6 +48,8 @@ export default function Page({ params }: Props) {
   if (pageNo === 1) {
     redirect(`/`);
   }
+
+  const allPosts = getPosts();
 
   if (!isValidPage(pageNo, allPosts.length)) {
     notFound();
