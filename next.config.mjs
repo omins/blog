@@ -12,6 +12,11 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   transpilePackages: ["contentlayer", "@contentlayer/client"],
+  compiler: {
+    removeConsole: {
+      exclude: ["error"],
+    },
+  },
 };
 
 export default withContentlayer(withPlaiceholder(nextConfig));
