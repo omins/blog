@@ -1,0 +1,7 @@
+.rehype-code-title {
+  @apply mt-2 rounded-t-lg bg-gray-900 px-4 py-1 text-white;
+}
+
+.rehype-code-title + pre[class*="language-"] {
+  @apply mt-0 rounded-t-none;
+}
