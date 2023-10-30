@@ -1,7 +1,9 @@
 import rehypePrism from "@mapbox/rehype-prism";
 import { defineDocumentType, makeSource } from "contentlayer/source-files";
 import rehypeAutoLinkHeadings from "rehype-autolink-headings";
+import rehypeCodeTitles from "rehype-code-titles";
 import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 import { getSlugWithoutCategoryPath } from "./lib/mdx";
 
 /** @type {import('contentlayer/source-files').ComputedFields} */
@@ -55,7 +57,9 @@ export default makeSource({
   contentDirPath: "./posts",
   documentTypes: [Post],
   mdx: {
+    remarkPlugins: [remarkGfm],
     rehypePlugins: [
+      rehypeCodeTitles,
       rehypePrism,
       rehypeSlug,
       [
