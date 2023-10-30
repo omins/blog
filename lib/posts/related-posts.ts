@@ -22,9 +22,7 @@ export function getPostsFilteredGivenPost(currentPost: Post) {
   const { _id, category } = currentPost;
 
   const allPosts = getPosts({ category });
-  console.log(allPosts.map((post) => post.title));
   const filteredPosts = allPosts.filter((post) => post._id !== _id);
-  console.log(filteredPosts.map((post) => post.title));
 
   return filteredPosts;
 }
