@@ -3,10 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { CATEGORY_ALL, CATEGORY_NAME_LABELS } from "@/constants/category";
 import { POSTS_PER_PAGE } from "@/constants/posts";
 import { getPages, isValidPage } from "@/lib/pages-utils";
-import {
-  getAllCategoriesWithCount,
-  getPostsByCategory,
-} from "@/lib/posts-utils";
+import { getAllCategoriesWithCount, getPosts } from "@/lib/posts";
 import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
@@ -53,7 +50,7 @@ export function generateMetadata({
 export default function Page({ params }: Props) {
   const { slug: category, id } = params;
   const pageNo = Number(id);
-  const allPosts = getPostsByCategory(category);
+  const allPosts = getPosts({ category });
 
   if (pageNo === 1) {
     redirect(`/category/${category}`);

@@ -1,0 +1,215 @@
+---
+title: Jest contentlayer ESM 오류 해결하기
+description: Jest에서 contentlayer를 사용할 때 ESM 오류 해결하는 법
+publishedAt: "2023-10-27"
+category: testing
+tags:
+  - jest
+  - contentlayer
+  - troubleshooting
+---
+
+## Intro
+
+블로그 글을 불러오는 유틸리티 함수를 만들고, 점점 복잡해지는 로직에 대한 Jest 테스트 코드를 작성하던 중 다음과 같은 에러를 만났다.
+
+요점은 jest 실행 중 `/node_modules/.pnpm/@contentlayer+client@0.3.2/node_modules/@contentlayer/client/dist/index.js:1` 내부의 ESM 기반 코드를 해석하지 못한다는 것이다.
+
+```
+FAIL  lib/posts-utils/__test__/index.spec.ts
+  ● Test suite failed to run
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+
+    Out of the box Jest supports Babel, which will be used to transform your files into valid JS based on your Babel configuration.
+
+    By default "node_modules" folder is ignored by transformers.
+
+    Here's what you can do:
+     • If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+     • If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+     • To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+     • If you need a custom transformation specify a "transform" option in your config.
+     • If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+
+    You'll find more details and examples of these config options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    /Users/omin/projects/blog/node_modules/.pnpm/@contentlayer+client@0.3.2/node_modules/@contentlayer/client/dist/index.js:1
+    ({"Object.<anonymous>":function(module,exports,require,__dirname,__filename,jest){export * from './guards.js';
+                                                                                      ^^^^^^
+
+    SyntaxError: Unexpected token 'export'
+
+
+
+      at Runtime.createScriptFromCode (node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1505:14)
+      at Object.<anonymous> (node_modules/.pnpm/contentlayer@0.3.2/node_modules/contentlayer/dist/client/index.js:5:14)
+      at Object.<anonymous> (.contentlayer/generated/index.mjs:23:17)
+      at Object.<anonymous> (lib/posts-utils/index.ts:26:20)
+      at Object.<anonymous> (lib/posts-utils/__test__/index.spec.ts:5:16)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.655 s
+Ran all test suites.
+ELIFECYCLE Test failed. See above for more details.
+```
+
+## 원인
+
+에러 메시지를 살펴보면 몇가지 힌트를 주고 있다.
+
+1. If you are trying to use ECMAScript Modules, see https://jestjs.io/docs/ecmascript-modules for how to enable it.
+   - ESModule을 사용하려면 jest 설정을 바꿔야 한다. 즉 default로는 ESM을 지원하지 않는다.
+2. If you are trying to use TypeScript, see https://jestjs.io/docs/getting-started#using-typescript
+   - TypeScript를 사용하려면 추가 설정을 해야 한다.
+3. To have some of your "node_modules" files transformed, you can specify a custom "transformIgnorePatterns" in your config.
+   - node_modules 내부의 파일을 변환하려면 `transformIgnorePatterns` 설정을 바꿔야 한다.
+4. If you need a custom transformation specify a "transform" option in your config.
+   - transform을 커스터마이징 하려면 `transform` 옵션을 설정해야 한다.
+5. If you simply want to mock your non-JS modules (e.g. binary assets) you can stub them out with the "moduleNameMapper" config option.
+   - JS가 아닌 모듈을 모킹하려면 `moduleNameMapper` 옵션을 설정해야 한다.
+
+Next.js 레포지토리에도 [비슷한 문제](https://github.com/vercel/next.js/issues/40183)가 제기되었다. [contentlayer](https://github.com/contentlayerdev/contentlayer/issues/318)도 마찬가지다.
+
+Jest에서 여러 힌트를 주었고, 이 상황에서 문제가 발생하는 직접적인 원인은 CJS 기반의 Jest가 ESM 기반의 코드를 해석하지 못하기 때문이다.
+
+이를 해결하기 위해서는 다음과 같은 방법이 있다.
+
+1. Jest에서 ESM을 사용할 수 있도록 [설정](https://jestjs.io/docs/ecmascript-modules)한다.
+
+   - `jest.config.js` 파일에 `module.exports = { transform: {} }`를 추가하고, Jest를 실행할 때 `--experimental-vm-modules` 옵션을 추가한다.
+   - 단 아직 experimental 이기 때문에, 안정적이지 못하다.
+
+2. **(채택)** Jest config의 transform 옵션과 transformIgnorePatterns를 설정하여, 문제가 되는 패키지를 babel, SWC 등으로 트랜스파일한다.
+
+ESM 기반의 코드 외에도 JSX, Typescript, Vue template등 plain JS가 아닌 코드를 Jest가 해석하려면 [모두 transform 해야 한다](https://jestjs.io/docs/code-transformation).
+
+## 해결
+
+<Callout emoji="🚨">
+  **환경:** Next v.13.5.4 app router | SWC | contentlayer v.0.3.2 | pnpm | jest
+  v.29.7.0
+</Callout>
+
+`next.config.mjs` 파일에 다음과 같은 설정을 추가하여 해결할 수
+있다.
+
+```js
+const nextConfig = {
+  // ...
+  transpilePackages: ["contentlayer", "@contentlayer/client"],
+};
+```
+
+jest.config.js 파일은 다음과 같다.
+
+```js
+const nextJest = require("next/jest.js");
+
+const createJestConfig = nextJest({
+  dir: "./",
+});
+
+/** @type {import('jest').Config} */
+const customConfig = {
+  // setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  testEnvironment: "jest-environment-jsdom",
+  preset: "ts-jest",
+};
+
+module.exports = createJestConfig(customConfig);
+```
+
+`next.config.mjs`의 `transpilePackages` 내부 동작을 조금 더 살펴보면
+
+1. `transpilePackages`에 추가된 패키지는 특정 파일을 transform 하지 않도록 설정하는 jest config 필드인 `transformIgnorePatterns`에 추가된다.
+2. 우리가 원하는 것은 `transpliePackage`에 추가된 패키지 만을 transform 하는 것이기 때문에 `transformIgnorePatterns`에서 해당 패키지를 제외하도록 설정된다.
+   - 만약 패키지 이름이 `contentlayer`, `@contentlayer/client`라면, `transformIgnorePatterns`에 다음과 같이 추가된다. `/node_modules/.pnpm/(?!(contentlayer|@contentlayer\\+client)@)`
+   - 이는 contentlayer와 @contentlayer/client만을 transform 하고, 나머지는 ignore하라는 뜻이다.
+
+[코드](https://github.com/vercel/next.js/blob/1e8dca4a87113f9d6ce0505c90f9a3d89096cefd/packages/next/src/build/jest/jest.ts#L162)
+
+```js
+const transpiled = (nextConfig?.transpilePackages ?? []).join('|');
+
+transformIgnorePatterns: [
+  // To match Next.js behavior node_modules is not transformed, only `transpiledPackages`
+  ...(transpiled
+    ? [
+        `/node_modules/(?!.pnpm)(?!(${transpiled})/)`,
+        `/node_modules/.pnpm/(?!(${transpiled.replace(
+          /\//g,
+          '\\+'
+        )})@)`,
+      ]
+    : ['/node_modules/']),
+  // CSS modules are mocked so they don't need to be transformed
+  '^.+\\.module\\.(css|sass|scss)$',
+
+  // Custom config can append to transformIgnorePatterns but not modify it
+  // This is to ensure `node_modules` and .module.css/sass/scss are always excluded
+  ...(resolvedJestConfig.transformIgnorePatterns || []),
+],
+```
+
+transpilePackages를 제공하지 않으면 기본적으로 `/node_modules/` 내부 모든 패키지를 transform 하지 않도록 설정되어있기 때문에 transform이 필요한 패키지임에도 무시된 것이다.
+
+정규식이 잘 동작하는지 확인하기 위해 같은 조건에서 어떤 결과가 도출되는지 출력해보았다.
+
+```js
+const transpiled = ["contentlayer", "@contentlayer/client"].join("|");
+const regex = new RegExp(
+  `/node_modules/.pnpm/(?!(${transpiled.replace(/\//g, "\\+")})@)`,
+);
+
+console.log(
+  "This is contentlayer and the result is",
+  regex.test(
+    "/node_modules/.pnpm/contentlayer@0.3.2/node_modules/contentlayer/dist/client/index.js",
+  ),
+); // false
+
+console.log(
+  "This is babel and the result is",
+  regex.test(
+    "/node_modules/.pnpm/babel+core@7.12.3/node_modules/@babel/core/lib/index.js",
+  ),
+); // true
+
+console.log(
+  "This is contentlayer client and the result is",
+  regex.test(
+    "/node_modules/.pnpm/@contentlayer+client@0.3.2/node_modules/@contentlayer/client/dist/index.js",
+  ),
+); // false
+```
+
+의도대로 동작하고, 오류도 해결됐다.
+
+## 추가 정보
+
+앞서 언급한 transform의 경우 SWC와 next/jest 조합에서는
+swc/jest-transformer를 사용한다.
+
+[코드](https://github.com/vercel/next.js/blob/1e8dca4a87113f9d6ce0505c90f9a3d89096cefd/packages/next/src/build/jest/jest.ts#L152)
+
+```js
+transform: {
+  // Use SWC to compile tests
+  '^.+\\.(js|jsx|ts|tsx|mjs)$': [
+    require.resolve('../swc/jest-transformer'),
+    jestTransformerConfig,
+  ],
+  // Allow for appending/overriding the default transforms
+  ...(resolvedJestConfig.transform || {}),
+},
+```
