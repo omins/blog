@@ -5,4 +5,5 @@ export const CATEGORY_NAME_LABELS = {
   all: "전체",
   os: "OS",
   testing: "Testing",
+  life: "Life",
 } as { [key: string]: string };
