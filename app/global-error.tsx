@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Fallback from "@/components/layout/error-fallback";
+import ErrorFallback from "@/components/layout/error-fallback";
 
 /**
  * FIXME: Currently, the global-error.tsx is not catching the error thrown by root layout.
@@ -24,7 +24,7 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <Fallback onRetry={reset} />
+        <ErrorFallback onReset={reset} />
       </body>
     </html>
   );

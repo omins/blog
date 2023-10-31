@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Fallback from "@/components/layout/error-fallback";
+import ErrorFallback from "@/components/layout/error-fallback";
 
 export default function ErrorPage({
   error,
@@ -15,5 +15,5 @@ export default function ErrorPage({
     console.error(error);
   }, [error]);
 
-  return <Fallback onRetry={reset} />;
+  return <ErrorFallback onReset={reset} />;
 }
