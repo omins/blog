@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ErrorProps } from "@/types/shared-layout";
 import ErrorFallback from "@/components/layout/error-fallback";
 
 /**
@@ -9,13 +10,7 @@ import ErrorFallback from "@/components/layout/error-fallback";
  * https://github.com/vercel/next.js/issues/52993
  */
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function GlobalError({ error, reset }: ErrorProps) {
   useEffect(() => {
     // TODO: Log error
     console.error(error);
