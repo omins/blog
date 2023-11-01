@@ -1,14 +1,33 @@
+import { Metadata } from "next";
+import { BASE_OG, METADATA } from "@/lib/metadata/shared-metadata";
 import Header from "@/components/layout/header";
 import "@/styles/globals.css";
 import Providers from "./providers";
 
-export const metadata = {
-  title: {
-    template: `OMIN's %s`,
-    default: "OMIN's Blog",
-  },
-  description: "주로 학습한 내용 혹은 회고글을 올립니다.",
-};
+export function generateMetadata() {
+  const { title, author, description, url } = METADATA;
+  return {
+    metadataBase: new URL(url),
+    title: {
+      default: title,
+      template: "OMIN's %s",
+    },
+    authors: [{ name: author }],
+    creator: author,
+    description,
+    openGraph: {
+      ...BASE_OG,
+      title,
+      description,
+      url,
+      siteName: title,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 interface RootLayoutProps {
   children: React.ReactNode;
