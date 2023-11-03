@@ -48,18 +48,17 @@ export function generateMetadata({ params }: PostProps): Metadata {
     image,
     tags,
   } = post;
-  const { url: baseUrl, author } = METADATA;
+  const { url: baseUrl, title: siteName } = METADATA;
+
   const keywords = tags?.join(",");
   const ogImage = image ? `${baseUrl}${image}` : `${baseUrl}/placeholder.png`;
-  const description = postDescription || `OMIN's Blog - ${title}`;
+  const description = postDescription || `${siteName} - ${title}`;
 
   return {
     title: {
       absolute: title,
     },
     keywords,
-    authors: [{ name: author }],
-    creator: author,
     description,
     openGraph: {
       ...BASE_OG,
