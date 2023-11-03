@@ -21,6 +21,8 @@ const computedFields = {
     type: "object",
     resolve: (doc) => {
       const url = process.env.BASE_URL || "https://omin.dev";
+      // FIXME: Some reason, tags is not array at resolve function.
+      // https://github.com/contentlayerdev/contentlayer/issues/150
       const keywords =
         doc.tags?._array?.map((tag) => tag.replace(/-/g, " ")) || [];
       const author = {
