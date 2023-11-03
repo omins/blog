@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPosts } from "@/lib/posts";
+import JsonLd from "@/components/json-ld";
 import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
 import RelatedPosts from "@/components/related-posts";
@@ -53,6 +54,7 @@ export default async function PostPage({ params }: PostProps) {
 
   return (
     <>
+      <JsonLd data={post.structuredData} />
       <article className="prose max-w-none break-words px-4 pb-6 dark:prose-invert">
         <Header post={post} />
         <Mdx code={post.body.code} />
