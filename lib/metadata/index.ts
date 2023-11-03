@@ -37,7 +37,6 @@ export function getRootStructuredData() {
     description,
     author,
     copyrightYear: 2023,
-    url,
     image: {
       "@type": "ImageObject",
       "@id": `${url}/placeholder.png`,
