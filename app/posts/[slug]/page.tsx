@@ -41,10 +41,17 @@ export function generateMetadata({ params }: PostProps): Metadata {
     return {};
   }
 
-  const { title, description, url_path: path, image } = post;
+  const {
+    title,
+    description: postDescription,
+    url_path: path,
+    image,
+    tags,
+  } = post;
   const { url: baseUrl, author } = METADATA;
-  const keywords = post.tags?.join(",");
+  const keywords = tags?.join(",");
   const ogImage = image ? `${baseUrl}${image}` : `${baseUrl}/placeholder.png`;
+  const description = postDescription || `OMIN's Blog - ${title}`;
 
   return {
     title: {
@@ -53,11 +60,11 @@ export function generateMetadata({ params }: PostProps): Metadata {
     keywords,
     authors: [{ name: author }],
     creator: author,
-    description: post?.description || `${post.title} - OMIN's Blog`,
+    description,
     openGraph: {
       ...BASE_OG,
       title,
-      description: description || `${post.title} - OMIN's Blog`,
+      description,
       url: `${baseUrl}${path}`,
       images: [{ url: ogImage, alt: title }],
     },
