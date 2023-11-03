@@ -57,6 +57,7 @@ function createMockPost(
       raw: "\n## Hello world\n",
       code: "",
     },
+    structuredData: {},
     _id: `test/${title}.mdx`,
     _raw: {
       sourceFilePath: `test/${title}.mdx`,
