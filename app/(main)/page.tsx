@@ -1,6 +1,4 @@
-import { getRootStructuredData } from "@/lib/metadata";
 import { getPosts } from "@/lib/posts";
-import JsonLd from "@/components/json-ld";
 import PaginatedPostList from "@/components/layout/paginated-list";
 
 export default async function Home() {
@@ -8,7 +6,6 @@ export default async function Home() {
 
   return (
     <>
-      <JsonLd data={getRootStructuredData()} />
       <PaginatedPostList
         allPosts={allPosts}
         pageNo={1}
