@@ -16,6 +16,41 @@ const computedFields = {
     type: "string",
     resolve: (doc) => `/posts/${getSlugWithoutCategoryPath(doc)}`,
   },
+
+  structuredData: {
+    type: "object",
+    resolve: (doc) => {
+      const url = process.env.BASE_URL || "https://omin.dev";
+      const keywords =
+        doc.tags?._array?.map((tag) => tag.replace(/-/g, " ")) || [];
+      const author = {
+        "@type": "Person",
+        name: "Minseok Oh",
+      };
+      const slug = getSlugWithoutCategoryPath(doc);
+
+      return {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "@id": `${url}/posts/${slug}`,
+        headline: doc.title,
+        description: doc.description || "",
+        datePublished: doc.publishedAt,
+        dateModified: doc.publishedAt,
+        // TODO: Change Image URL
+        author,
+        url: `${url}/posts/${slug}`,
+        image: doc.image ? url + doc.image : `${url}/placeholder.png`,
+        isPartOf: {
+          "@type": "Blog",
+          "@id": url,
+          name: "OMIN's Blog",
+          author,
+        },
+        keywords,
+      };
+    },
+  },
 };
 
 export const Post = defineDocumentType(() => ({
