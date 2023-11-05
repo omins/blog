@@ -78,3 +78,58 @@ export function generateStaticParams() {
 
   return params;
 }
+
+export function generateMetadata({ params }: PageProps): Metadata {
+  const { slugs } = params;
+  const { pageNo, category } = getPageInfoFromSlugs(slugs || []);
+  const { title: siteName, url: baseUrl } = METADATA;
+
+  const description = getDescription(category);
+  const title = getTitle(category, pageNo);
+  const url = getUrl(baseUrl, category, pageNo);
+
+  return {
+    title: { absolute: title },
+    description,
+    openGraph: {
+      ...BASE_OG,
+      siteName,
+      title,
+      description,
+      url,
+      images: [{ url: `${baseUrl}/placeholder.png`, alt: title }],
+    },
+  };
+}
+
+function getTitle(category: string | null, pageNo: number): string {
+  const title = `OMIN's ${
+    category ? CATEGORY_NAME_LABELS[category] || category : "Blog"
+  }`;
+
+  if (pageNo > 1) {
+    return `${title} - Page ${pageNo}`;
+  }
+
+  return title;
+}
+
+function getDescription(category: string | null): string {
+  return category
+    ? `${CATEGORY_NAME_LABELS[category] || category} 관련 글을 확인해보세요.`
+    : METADATA.description;
+}
+
+function getUrl(
+  baseUrl: string,
+  category: string | null,
+  pageNo: number,
+): string {
+  if (category === null) {
+    return pageNo === 1 ? baseUrl : `${baseUrl}/pages/${pageNo}`;
+  }
+
+  return pageNo === 1
+    ? `${baseUrl}/category/${category}`
+    : `${baseUrl}/category/${category}/pages/${pageNo}`;
+}
