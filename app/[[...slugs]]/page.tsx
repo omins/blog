@@ -1,6 +1,8 @@
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CATEGORY_ALL } from "@/constants/category";
+import { CATEGORY_ALL, CATEGORY_NAME_LABELS } from "@/constants/category";
 import { POSTS_PER_PAGE } from "@/constants/posts";
+import { BASE_OG, METADATA } from "@/lib/metadata";
 import { getPageInfoFromSlugs } from "@/lib/pages";
 import { getPages } from "@/lib/pages-utils";
 import { getAllCategoriesWithCount, getPosts } from "@/lib/posts";
@@ -8,18 +10,18 @@ import PaginatedPostList from "@/components/layout/paginated-list";
 
 export const dynamicParams = false;
 
-type Props = { params: { slugs: string[] | undefined } };
+type PageProps = { params: { slugs: string[] | undefined } };
 
-export default async function MainPage({ params }: Props) {
+export default async function MainPage({ params }: PageProps) {
   const { slugs } = params;
-
   const { pageNo, category } = getPageInfoFromSlugs(slugs || []);
-  const allPosts = category === null ? getPosts() : getPosts({ category });
 
-  if (slugs?.includes("pages") && slugs?.includes("1")) {
-    const path = category === null ? "/" : `/category/${category}`;
+  if (isFirstPage(slugs || [])) {
+    const path = getPathToRedirect(category);
     redirect(path);
   }
+
+  const allPosts = category === null ? getPosts() : getPosts({ category });
 
   return (
     <>
@@ -30,6 +32,14 @@ export default async function MainPage({ params }: Props) {
       />
     </>
   );
+}
+
+function isFirstPage(slugs: string[]): boolean {
+  return slugs?.includes("pages") && slugs?.includes("1");
+}
+
+function getPathToRedirect(category: string | null): string {
+  return category === null ? "/" : `/category/${category}`;
 }
 
 /**
@@ -68,36 +78,3 @@ export function generateStaticParams() {
 
   return params;
 }
-
-// export async function generateMetadata(
-//   {
-//     params,
-//     searchParams,
-//   }: {
-//     params: { slug: string };
-//     searchParams: { [key: string]: string | string[] | undefined };
-//   },
-//   parent: ResolvingMetadata,
-// ): Promise<Metadata> {
-//   const { slug: category } = params;
-//   const { url: baseUrl, title: siteName } = METADATA;
-
-//   const categoryName = CATEGORY_NAME_LABELS[category] || category;
-//   const posts = getPosts({ category });
-
-//   const description = `${categoryName} 관련 ${posts.length}개의 글을 확인해보세요.`;
-//   const title = `OMIN's ${categoryName}`;
-
-//   return {
-//     // Using template for title declared in root layout
-//     title: `${categoryName}`,
-//     description,
-//     openGraph: {
-//       ...BASE_OG,
-//       title,
-//       description,
-//       url: `${baseUrl}/category/${category}`,
-//       images: [{ url: "/placeholder.png", alt: "parent alt" }],
-//     },
-//   };
-// }
