@@ -25,7 +25,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
 
 export function generateMetadata(): Metadata {
   const keywords = getAllKeywords();
-  const { title, author, description, url } = METADATA;
+  const {
+    title,
+    author,
+    description,
+    url,
+    googleSiteVerificationCode,
+    naverSiteVerificationCode,
+  } = METADATA;
   return {
     metadataBase: new URL(url),
     title: {
@@ -46,6 +53,10 @@ export function generateMetadata(): Metadata {
     robots: {
       index: true,
       follow: true,
+    },
+    other: {
+      "naver-site-verification": naverSiteVerificationCode,
+      "google-site-verification": googleSiteVerificationCode,
     },
   };
 }
