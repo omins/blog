@@ -47,5 +47,9 @@ export function generateMetadata(): Metadata {
       index: true,
       follow: true,
     },
+    other: {
+      "naver-site-verification": "602bd1cee0bf47803b3a8ded7546cdfcfa896c3a",
+      "google-site-verification": "k0gTQxuyfEuryo_pVhbh0Et0uC4wE1hLam_6kF5GaNA",
+    },
   };
 }
