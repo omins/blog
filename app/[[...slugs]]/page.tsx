@@ -50,8 +50,12 @@ function getPathToRedirect(category: string | null): string {
  * 4. /category/:category/pages/:page
  *  */
 
-export function generateStaticParams() {
-  const params: { slugs: string[] }[] = [];
+type StaticParam = {
+  slugs: string[];
+};
+
+export function generateStaticParams(): StaticParam[] {
+  const params: StaticParam[] = [];
   params.push({ slugs: [""] });
 
   const categories = getAllCategoriesWithCount();
