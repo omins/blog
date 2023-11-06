@@ -88,8 +88,8 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const { pageNo, category } = getPageInfoFromSlugs(slugs || []);
   const { title: siteName, url: baseUrl } = METADATA;
 
-  const description = getDescription(category);
   const title = getTitle(category, pageNo);
+  const description = getDescription(category);
   const url = getUrl(baseUrl, category, pageNo);
 
   return {
@@ -97,9 +97,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
     description,
     openGraph: {
       ...BASE_OG,
-      siteName,
       title,
       description,
+      siteName,
       url,
       images: [{ url: `${baseUrl}/placeholder.png`, alt: title }],
     },
