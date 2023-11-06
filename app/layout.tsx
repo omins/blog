@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Script from "next/script";
 import { BASE_OG, METADATA, getAllKeywords } from "@/lib/metadata";
 import Header from "@/components/layout/header";
 import "@/styles/globals.css";
@@ -9,8 +10,17 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const { gtagId } = METADATA;
   return (
     <html lang="en" className="scroll-smooth">
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`} />
+      <Script id="gtag-script">
+        {`window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', '${gtagId}');`}
+      </Script>
       <body
         className={`mx-auto max-w-3xl bg-white text-black antialiased dark:bg-black`}
       >
