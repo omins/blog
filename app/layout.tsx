@@ -1,14 +1,8 @@
+import { Metadata } from "next";
+import { BASE_OG, METADATA, getAllKeywords } from "@/lib/metadata";
 import Header from "@/components/layout/header";
 import "@/styles/globals.css";
 import Providers from "./providers";
-
-export const metadata = {
-  title: {
-    template: `OMIN's %s`,
-    default: "OMIN's Blog",
-  },
-  description: "주로 학습한 내용 혹은 회고글을 올립니다.",
-};
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -27,4 +21,31 @@ export default function RootLayout({ children }: RootLayoutProps) {
       </body>
     </html>
   );
+}
+
+export function generateMetadata(): Metadata {
+  const keywords = getAllKeywords();
+  const { title, author, description, url } = METADATA;
+  return {
+    metadataBase: new URL(url),
+    title: {
+      default: title,
+      template: "OMIN's %s",
+    },
+    description,
+    keywords,
+    authors: [{ name: author }],
+    creator: author,
+    openGraph: {
+      ...BASE_OG,
+      title,
+      description,
+      url,
+      siteName: title,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
 }
