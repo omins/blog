@@ -35,7 +35,7 @@ export default async function MainPage({ params }: PageProps) {
 }
 
 function isFirstPage(slugs: string[]): boolean {
-  return slugs?.includes("pages") && slugs?.includes("1");
+  return slugs.includes("pages") && slugs.includes("1");
 }
 
 function getPathToRedirect(category: string | null): string {
