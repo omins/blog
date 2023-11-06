@@ -8,6 +8,7 @@ export const METADATA = {
   url: process.env.BASE_URL || "https://omin.dev",
   googleSiteVerificationCode: process.env.GOOGLE_SITE_VERIFICATION_CODE || "",
   naverSiteVerificationCode: process.env.NAVER_SITE_VERIFICATION_CODE || "",
+  gtagId: process.env.GTAG_ID || "",
 };
 
 export const BASE_OG = {
