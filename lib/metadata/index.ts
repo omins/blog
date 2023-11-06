@@ -6,6 +6,8 @@ export const METADATA = {
   description: "주로 학습한 내용 혹은 회고글을 올립니다.",
   author: "Minseok OH",
   url: process.env.BASE_URL || "https://omin.dev",
+  googleSiteVerificationCode: process.env.GOOGLE_SITE_VERIFICATION_CODE || "",
+  naverSiteVerificationCode: process.env.NAVER_SITE_VERIFICATION_CODE || "",
 };
 
 export const BASE_OG = {
