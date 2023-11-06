@@ -46,31 +46,48 @@ export function generateMetadata({ params }: PostProps): Metadata {
     description: postDescription,
     url_path: path,
     image,
-    tags,
+    tags: keywords,
   } = post;
-  const { url: baseUrl, title: siteName } = METADATA;
 
-  const keywords = tags?.join(",");
-  const ogImage = image ? `${baseUrl}${image}` : `${baseUrl}/placeholder.png`;
-  const description = postDescription || `${siteName} - ${title}`;
+  const ogImageUrl = getOgImageUrl(image);
+  const url = getOgUrl(path);
+  const description = getDescription(postDescription, title);
 
   return {
     title: {
       absolute: title,
     },
-    keywords,
     description,
+    keywords,
     openGraph: {
       ...BASE_OG,
       title,
       description,
-      url: `${baseUrl}${path}`,
-      images: [{ url: ogImage, alt: title }],
+      url,
+      images: [{ url: ogImageUrl, alt: title }],
     },
   } as Metadata;
 }
 
-export async function generateStaticParams(): Promise<PostProps["params"][]> {
+function getOgImageUrl(image: string | undefined): string {
+  const { url } = METADATA;
+  return image ? `${url}${image}` : `${url}/placeholder.png`;
+}
+
+function getDescription(
+  description: string | undefined,
+  postTitle: string,
+): string {
+  const { title } = METADATA;
+  return description || `${title} - ${postTitle}`;
+}
+
+function getOgUrl(path: string): string {
+  const { url } = METADATA;
+  return `${url}${path}`;
+}
+
+export function generateStaticParams(): PostProps["params"][] {
   const allPosts = getPosts();
   return allPosts.map((post) => ({
     slug: post.slug,
