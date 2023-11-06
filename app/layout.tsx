@@ -32,10 +32,10 @@ export function generateMetadata(): Metadata {
       default: title,
       template: "OMIN's %s",
     },
-    keywords: [keywords.join(",")],
+    description,
+    keywords,
     authors: [{ name: author }],
     creator: author,
-    description,
     openGraph: {
       ...BASE_OG,
       title,
