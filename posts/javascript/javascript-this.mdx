@@ -1,0 +1,40 @@
+---
+title: 자유로운 this
+description: Javascript 'this' is not this.
+publishedAt: "2023-11-10"
+category: javascript
+tags:
+  - this
+---
+
+Javascript에서 this는 this가 아니다. 그게 무슨 말인가? 정확히는 우리가 기대하는 this가 아닐 수 있다. this는 호출시점에 결정되며, 엄격 모드인지 아닌지에 따라서도 그 값이 다르다. 객체를 다루는 대부분의 언어에서 this는 인스턴스 자신에 대한 참조변수이다. 따라서 메서드가 참조하는 this는 항상 인스턴스 자체를 참조할 것으로 기대하고 프로그래밍하지만 Javascript에서는 다르다.
+
+이해를 돕기 위해 예시 위주로 살펴보자.
+
+아래 코드에서 someFunc()의 실행 결과는 무엇일까?
+
+```javascript
+const obj = {
+  name: "omin",
+  sayHi() {
+    console.log(`hello ${this.name}`);
+  },
+};
+
+function someFunc(callback) {
+  callback();
+}
+
+someFunc(obj.sayHi);
+```
+
+`hello omin`을 출력할 것으로 예상했지만 비엄격 모드에서는 `hello undifined`가 출력되고, 엄격모드에서는 `TypeError: Cannot read properties of undefined (reading 'name')`라는 에러를 출력한다. 왜일까? 이 현상을 뜯어보면 this를 동작하는 방식을 파악해볼 수 있다.
+
+앞서 설명했듯이 javascript에서 this는 호출 시점에 결정된다. `someFunc()`에 `obj.sayHi` 메서드를 콜백으로 넘기면 메서드는 `obj`와 분리되어 객체의 메소드가 아닌 함수가 된다.
+
+## 참고자료
+
+[메서드와 this](https://ko.javascript.info/object-methods)
+[this](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this)
+[함수 호출 방식에 의해 결정되는 this](https://poiemaweb.com/js-this)
+[JavaScript: What is the meaning of this?](https://web.dev/articles/javascript-this)
