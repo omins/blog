@@ -9,7 +9,7 @@ tags:
 
 Javascript에서 this는 this가 아니다. 그게 무슨 말인가? 정확히는 우리가 기대하는 this가 아닐 수 있다. this는 엄격 모드인지 아닌지에 따라서도 그 값이 다르며, 호출시점에 동적으로 결정된다. 이를 런타임 바인딩이라고 한다.
 
-객체를 다루는 대부분의 언어에서 this는 인스턴스 자신에 대한 참조변수이다. 따라서 메서드가 참조하는 this는 항상 인스턴스 자체를 참조할 것으로 기대하고 프로그래밍하지만 Javascript에서는 다르다.
+객체를 다루는 대부분의 언어에서 this는 인스턴스 자신에 대한 참조변수이다. 따라서 메소드가 참조하는 this는 항상 인스턴스 자체를 참조할 것으로 기대하고 프로그래밍하지만 Javascript에서는 다르다.
 
 이해를 돕기 위해 예시 위주로 살펴보자.
 
@@ -114,15 +114,15 @@ obj2.sayHi(); // oms
 console.log(obj1.sayHi === obj2.sayHi); // true
 ```
 
-만약 메소드가 접근하는 값이 원시값이라면,
+만약 메소드가 접근하는 값이 원시값이라면 this는,
 
-- 엄격모드: this는 원시값이 된다.
-- 비엄격모드: 원시값의 래퍼 객체를 반환한다.
+- 엄격모드: 원시값이 된다.
+- 비엄격모드: 원시값의 래퍼 객체가 된다.
 
-어떠한 값에도 접근하지 않고 호출한다면,
+어떠한 값에도 접근하지 않고 호출한다면 this는,
 
-- 엄격모드: undefined를 참조한다.
-- 비엄격모드: globalThis를 참조한다. 브라우저의 경우 window. node 환경에서는 global object
+- 엄격모드: undefined이다.
+- 비엄격모드: globalThis이다. 브라우저의 경우 window, node 환경에서는 global.
 
 ```js
 // 예시 출처: mdn
@@ -138,14 +138,96 @@ function getThis() {
 Number.prototype.getThisStrict = getThisStrict;
 Number.prototype.getThis = getThis;
 
-console.log((1).getThisStrict()); // number
+console.log(typeof (1).getThisStrict()); // number
 console.log(typeof (1).getThis()); // object
 console.log(getThisStrict()); // undefined
-console.log(getThis()); // globalThis
+console.log(getThis()); // window | global (globalThis)
 console.log(getThis() === globalThis); // true
 ```
 
-<Callout>비엄격모드에서는 this값이 항상 객체이다.</Callout>
+<Callout>비엄격모드에서 this는 항상 객체이다.</Callout>
+
+#### 콜백
+
+콜백으로 함수를 넘기는 경우에도 보통 this는 undefined이고, 비엄격모드에서는 객체다. 하지만 보통의 내장 메소드에 콜백으로 넘기는 경우가 그런 것이지 항상 그런 것은 아니기에 명세와 공식 문서의 설명을 잘 참고하자.
+
+```js
+function getThisStrict() {
+  "use strict";
+  console.log(this);
+  return this;
+}
+
+function getThis() {
+  console.log(this);
+  return this;
+}
+
+["omin", "oms"].forEach(getThisStrict); // undefined, undefined
+["omin", "oms"].forEach(getThis); // global, global
+```
+
+일부 내장 메소드는 optional 인자로 this를 넘길 수 있으며, `JSON.parse()`의 reviver나 JSON.stringify()의 replacer의 경우 this 값이 undefined가 아니다.
+
+```js
+["omin", "oms"].forEach(getThisStrict, { name: "omin & oms" }); // { name: 'omin & oms' }, { name: 'omin & oms' }
+["omin", "oms"].forEach(getThis, { name: "omin & oms" }); // { name: 'omin & oms' }, { name: 'omin & oms' }
+```
+
+#### 화살표 함수
+
+화살표 함수는 자체적인 this를 가지지 않으며 렉시컬 환경에 의해 결정된다. 언어차원에서 하나의 인자로 제공되는 this가 화살표 함수에는 없으며, 함수 '선언' 시점에 this가 바인딩 된다.
+
+```js
+const globalObj = this;
+const hello = () => this;
+console.log(globalObj === hello()); // true
+```
+
+아래 코드에서 getThisGetter는 this를 리턴하는 화살표 함수를 리턴한다. 이를 각각 obj1과 obj2의 메소드로 할당한 뒤, getter 호출 결과를 비교해보자.
+
+```js
+"use strict";
+
+function getThisGetter() {
+  return () => this;
+}
+
+const obj1 = {
+  name: "omin",
+};
+
+const obj2 = {
+  name: "oms",
+};
+
+obj1.getThisGetter = getThisGetter;
+obj2.getThisGetter = getThisGetter;
+
+const getter1 = obj1.getThisGetter();
+const getter2 = obj2.getThisGetter();
+
+console.log(getter1() === obj1); // true
+console.log(getter2() === obj2); // true
+console.log(getThisGetter()()); // undefinded
+```
+
+getter1의 호출 결과는 obj1과 같다. getter2의 호출 결과는 obj2와 같다.
+
+이는 `getThisGetter()`의 호출 시점(getter 입장에선 선언 시점)에 각각 obj1과 obj2가 this로 바인딩 되었고, 화살표 함수가 외부 렉시컬 환경의 this를 바인딩하기 때문이다.
+
+반면 getThisGetter()의 리턴 결과를 독립적으로 호출한 경우 바인딩 된 this가 전역 this이기 때문에 undefined를 반환한다.
+
+또 화살표 함수는 이후 호출 시점에 this를 변경하려 해도 무시한다.
+
+```js
+console.log(getter1.call(obj2) === obj2); // false
+console.log(getter2.call(obj1) === obj1); // false
+```
+
+### This 지정하기
+
+`Function.prototype.call()`, `Function.prototype.apply()`, `Function.prototype.bind()`, `Reflect.apply()`를 통해 this를 지정할 수 있다.
 
 ## 참고자료
 
