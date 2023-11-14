@@ -1,6 +1,6 @@
 import { CATEGORY_ALL } from "@/constants/category";
 import { Post } from "contentlayer/generated";
-import { Order, SortBy, getPosts, sortPosts } from "..";
+import { Order, SortBy, getPosts, getSlugFromPath, sortPosts } from "..";
 import { mockPosts } from "./mock";
 
 describe("sortPosts function", () => {
@@ -40,4 +40,23 @@ describe("getPosts function", () => {
       expect(returedValues).toEqual(answer);
     });
   }
+});
+
+describe("getSlugFromPath", () => {
+  const SLUG = "csr-ssr-ssg";
+
+  it("should return slug even category has provided", () => {
+    const path = `web/${SLUG}`;
+    expect(getSlugFromPath(path)).toBe(SLUG);
+  });
+
+  it("should return slug when categories are nested", () => {
+    const path = `web/rendering/${SLUG}`;
+    expect(getSlugFromPath(path)).toBe(SLUG);
+  });
+
+  it("should return slug when category has not provided", () => {
+    const path = SLUG;
+    expect(getSlugFromPath(path)).toBe(SLUG);
+  });
 });
