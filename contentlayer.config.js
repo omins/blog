@@ -4,17 +4,17 @@ import rehypeAutoLinkHeadings from "rehype-autolink-headings";
 import rehypeCodeTitles from "rehype-code-titles";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
-import { getSlugWithoutCategoryPath } from "./lib/mdx";
+import { getSlugFromPath } from "./lib/posts";
 
 /** @type {import('contentlayer/source-files').ComputedFields} */
 const computedFields = {
   slug: {
     type: "string",
-    resolve: (doc) => getSlugWithoutCategoryPath(doc),
+    resolve: (doc) => getSlugFromPath(doc._raw.flattenedPath),
   },
   url_path: {
     type: "string",
-    resolve: (doc) => `/posts/${getSlugWithoutCategoryPath(doc)}`,
+    resolve: (doc) => `/posts/${getSlugFromPath(doc._raw.flattenedPath)}`,
   },
 
   structuredData: {
@@ -29,7 +29,7 @@ const computedFields = {
         "@type": "Person",
         name: "Minseok Oh",
       };
-      const slug = getSlugWithoutCategoryPath(doc);
+      const slug = getSlugFromPath(doc._raw.flattenedPath);
 
       return {
         "@context": "https://schema.org",

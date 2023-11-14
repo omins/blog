@@ -1,5 +1,5 @@
-import { CATEGORY_ALL } from "@/constants/category";
 import { Post, allPosts } from "contentlayer/generated";
+import { CATEGORY_ALL } from "../../constants/category";
 
 type CategoryWithCount = {
   [key: string]: number;
@@ -103,3 +103,11 @@ export function getPostsByCategory(category: string) {
 
   return posts;
 }
+
+export const getSlugFromPath = (path: string): string => {
+  const startIndexOfLastSegment = path.lastIndexOf("/");
+
+  return startIndexOfLastSegment !== -1
+    ? path.slice(startIndexOfLastSegment + 1)
+    : path;
+};
