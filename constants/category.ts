@@ -8,4 +8,5 @@ export const CATEGORY_NAME_LABELS = {
   life: "Life",
   project: "Project",
   javascript: "Javascript",
+  react: "React",
 } as { [key: string]: string };
