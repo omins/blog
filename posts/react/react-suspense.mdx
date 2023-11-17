@@ -1,0 +1,330 @@
+---
+title: <Suspense>
+description: 우아하게 비동기 처리하기
+publishedAt: "2023-11-16"
+category: react
+tags:
+  - suspense
+  - component
+---
+
+## Suspense란?
+
+[React Suspense](https://react.dev/reference/react/Suspense)는 비동기 작업의 선언적 처리를 도와주는 컴포넌트다. 자식 컴포넌트의 비동기 작업이 끝나기 전까지 fallback을 렌더링하며 기다릴 수 있도록 도와준다.
+
+더 고차원적으로 Suspense는 개발자 혹은 데이터 프레임워크가 비동기 데이터를 처리하는 동안 UI 라이브러리인 리액트와 소통하는 하나의 메커니즘이다.
+
+## 어떤 문제를 해결하는가?
+
+### 명령적인 비동기 처리
+
+비동기 데이터를 불러올 때는 1\) 로딩중 2\) 에러 3\) 성공 세 가지 경우에 대응해야 한다. Suspense를 사용하기 이전에는 각 상태를 컴포넌트 내에서 명령적으로 처리해주어야 했다. 아래 예제에서 Albums 컴포넌트는 `getAlbums()` 함수를 통해 데이터를 비동기적으로 불러온다. 그리고 컴포넌트 내에 로딩, 에러, 성공 각 상태에 대한 처리가 명시되어 있다.
+
+```jsx:Albums.js
+export default function Albums({ artistId }) {
+  const [albums, setAlbums] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    getAlbums(artistId)
+      .then((l) => {
+        setAlbums(l);
+        setIsLoading(false);
+      })
+      .catch((e) => {
+        setError(e);
+        setIsLoading(false);
+      });
+  }, []);
+
+  if (isLoading) return <Loading />;
+  if (error) return <ErrorFallback />;
+
+  return (
+    <ul>
+      {albums.map((album) => (
+        <li key={album.id}>
+          {album.title} ({album.year})
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+```jsx:ArtistPage.js
+export default function ArtistPage({ artist }) {
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      <Albums artistId={artist.id} />
+    </>
+  );
+}
+
+```
+
+Albums 컴포넌트를 Suspense와 ErrorBoundary로 감싸면 Albums 컴포넌트는 View에 집중하고, 로딩과 에러에 대한 처리를 상위 컴포넌트인 Suspense와 ErrorBoundary에 위임할 수 있다(ErrorBoundary는 추후 포스팅에서 다루어보자). 컴포넌트가 하나의 책임을 가지며, 어떤 데이터를 사용할지 '**선언**'한다.
+
+```jsx:Albums.js
+export default function Albums({ artistId }) {
+  //albums를 사용하겠다고 선언한다. 로딩과 에러에 대한 처리는 상위 컴포넌트로 위임한다.
+  const albums = use(fetchData(`/${artistId}/albums`));
+
+  return (
+    <ul>
+      {albums.map(album => (
+        <li key={album.id}>
+          {album.title} ({album.year})
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+```jsx:ArtistPage.js
+export default function ArtistPage({ artist }) {
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      <ErrorBoundary>
+        <Suspense fallback={<Loading />}>
+          <Albums artistId={artist.id} />
+        </Suspense>
+      </ErrorBoundary>
+    </>
+  );
+}
+```
+
+### Waterfall 방식의 렌더링
+
+웹 개발자가 해결해야 하는 가장 중요한 문제 중 하나는, 앱이 여러 비동기 작업을 처리하면서도 최고의 사용자 경험을 제공하는 것이다.
+
+React 팀의 [리서치 결과](https://17.reactjs.org/blog/2019/11/06/building-great-user-experiences-with-concurrent-mode-and-suspense.html#best-practices-for-suspense) 사용자는 앱의 첫 실행시간 뿐만 아니라 앱 사용중 로딩 시간과 경험에도 매우 민감하다고 한다. 사용자는 무의식적으로 A -> B의 작업이 시간이 소요된다는 것을 인지한다. 그리고 대부분의 앱에서 로딩 인디케이터로 A -> B 작업이 시작했음을 알려준다. 하지만 A -> B의 작업이 시작했다는 반응이 없으면 사용자는 앱이 어딘가 고장났다는 느낌을 받는다.
+
+Suspense를 사용하기 전에는 런타임에 이루어지는 비동기 작업이 컴포넌트의 렌더링(A -> B 작업)을 막는 경우가 있었다. 컴포넌트의 effect에서 비동기 작업을 처리하기 때문에 비동기 작업이 완료되기 전에는 다른 컴포넌트의 렌더링이 시작되지도 않기 때문이다. Fetch-on-render 방식이 대표적이다.
+
+#### Fetch-on-render
+
+아래 예제에서, ProfileTimeLine 컴포넌트는 ProfilePage에 의존하는 데이터가 없음에도, ProfilePage의 fetching이 완료될 때까지 기다려야 한다. 이러한 방식을 [fetch-on-render(waterfall)](https://17.reactjs.org/docs/concurrent-mode-suspense.html#approach-1-fetch-on-render-not-using-suspense) 방식이라고 한다.
+
+```jsx
+function ProfilePage() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetchUser().then((u) => setUser(u));
+  }, []);
+
+  if (user === null) {
+    return <p>Loading profile...</p>;
+  }
+  return (
+    <>
+      <h1>{user.name}</h1>
+      <ProfileTimeline />
+    </>
+  );
+}
+
+function ProfileTimeline() {
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    fetchPosts().then((p) => setPosts(p));
+  }, []);
+
+  if (posts === null) {
+    return <h2>Loading posts...</h2>;
+  }
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+<Image
+  src={"/react/react-suspense/fetch-on-render.jpg"}
+  alt="fetch-on-render"
+  width={1024}
+  height={768}
+/>
+
+#### Fetch-then-render
+
+Suspense 없이도 waterfall 방식을 해결하는 방법 중 하나는 모든 fetch를 한 번에 수행하고, 필요할 때마다 데이터를 가져와서 렌더링하는 방법인 fetch-then-render 방식이 있다. 하나의 주체가 모든 데이터를 fetch하고, 쿼리 형태로 불러오는 [Relay](https://relay.dev/) 같은 라이브러리가 차용하는 방식이다.
+
+```jsx
+function fetchProfileData() {
+  return Promise.all([fetchUser(), fetchPosts()]).then(([user, posts]) => {
+    return { user, posts };
+  });
+}
+```
+
+```jsx
+// Kick off fetching as early as possible
+const promise = fetchProfileData();
+
+function ProfilePage() {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    promise.then((data) => {
+      setUser(data.user);
+      setPosts(data.posts);
+    });
+  }, []);
+
+  if (user === null) {
+    return <p>Loading profile...</p>;
+  }
+  return (
+    <>
+      <h1>{user.name}</h1>
+      <ProfileTimeline posts={posts} />
+    </>
+  );
+}
+
+// The child doesn't trigger fetching anymore
+function ProfileTimeline({ posts }) {
+  if (posts === null) {
+    return <h2>Loading posts...</h2>;
+  }
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+하지만 이 마저도 모든 데이터를 불러온 뒤에야 첫 렌더링이 시작된다는 단점이 있다.
+
+<Image
+  src={"/react/react-suspense/fetch-then-render.jpg"}
+  alt="fetch-then-render"
+  width={1024}
+  height={768}
+/>
+
+#### Render-as-you-fetch
+
+Suspense를 활용한 render-as-you-fetch 방식은 각 fetch가 완료될 때 컴포넌트를 렌더링한다. 네트워크 요청은 병렬로 이루어지기 때문에 완료된 순서대로 컴포넌트가 렌더링 된다. 이 방법으로 waterfall 방식의 렌더링을 해결할 수 있다.
+
+> With Suspense, we don’t wait for the response to come back before we start rendering. In fact, we start rendering pretty much immediately after kicking off the network request:
+
+```jsx
+// This is not a Promise. It's a special object from our Suspense integration.
+const resource = fetchProfileData();
+
+function ProfilePage() {
+  return (
+    <Suspense fallback={<h1>Loading profile...</h1>}>
+      <ProfileDetails />
+      <Suspense fallback={<h1>Loading posts...</h1>}>
+        <ProfileTimeline />
+      </Suspense>
+    </Suspense>
+  );
+}
+
+function ProfileDetails() {
+  // Try to read user info, although it might not have loaded yet
+  const user = resource.user.read();
+  return <h1>{user.name}</h1>;
+}
+
+function ProfileTimeline() {
+  // Try to read posts, although they might not have loaded yet
+  const posts = resource.posts.read();
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+<Image
+  src={"/react/react-suspense/render-as-you-fetch.jpg"}
+  alt="render-as-you-fetch"
+  width={1024}
+  height={768}
+/>
+
+### Code splitting
+
+Suspense는 data fetching 외에도 [`React.lazy()`](https://react.dev/reference/react/lazy)를 활용한 code splitting에 사용될 수 있다. 심지어 data fetching보다 먼저 사용된 곳이 code splitting이었다.
+
+```jsx
+import { Suspense, lazy, useState } from "react";
+import Loading from "./Loading.js";
+
+const MarkdownPreview = lazy(() =>
+  delayForDemo(import("./MarkdownPreview.js")),
+);
+
+export default function MarkdownEditor() {
+  const [showPreview, setShowPreview] = useState(false);
+  const [markdown, setMarkdown] = useState("Hello, **world**!");
+  return (
+    <>
+      <textarea
+        value={markdown}
+        onChange={(e) => setMarkdown(e.target.value)}
+      />
+      <label>
+        <input
+          type="checkbox"
+          checked={showPreview}
+          onChange={(e) => setShowPreview(e.target.checked)}
+        />
+        Show preview
+      </label>
+      <hr />
+      {showPreview && (
+        <Suspense fallback={<Loading />}>
+          <h2>Preview</h2>
+          <MarkdownPreview markdown={markdown} />
+        </Suspense>
+      )}
+    </>
+  );
+}
+```
+
+## 맺으며
+
+React core team이 생각하는 [Suspense의 최종 비전](https://react.dev/blog/2022/03/29/react-v18#suspense-in-data-frameworks)은 모든 비동기 작업을 선언적으로 처리하는 컴포넌트라고 한다.
+
+> As in previous versions of React, you can also use Suspense for code splitting on the client with React.lazy. But our vision for Suspense has always been about much more than loading code — the goal is to extend support for Suspense so that eventually, the same declarative Suspense fallback can handle any asynchronous operation (loading code, data, images, etc).
+
+## 참고자료
+
+[\<Suspense\>](https://react.dev/reference/react/Suspense)
+[Nextjs conf](https://nextjs.org/conf)
+[React v18.0](https://react.dev/blog/2022/03/29/react-v18)
+[Suspense rfc](https://github.com/reactjs/rfcs/blob/main/text/0213-suspense-in-react-18.md)
+[Behavior change of suspense](https://github.com/reactwg/react-18/discussions/7)
+[React.lazy rfc](https://github.com/reactjs/rfcs/blob/gaearon-patch-2/text/0000-lazy.md)
+[Conceptual Model of React Suspense](https://blog.mathpresso.com/conceptual-model-of-react-suspense-a7454273f82e)
+
+https://velog.io/@suyeon9456/NextJs%EC%97%90-React18-Suspense-%EC%A0%81%EC%9A%A9%ED%95%98%EA%B8%B0-with-react-query-%EC%A0%81%EC%9A%A9
+
+https://dev.to/smitterhane/swap-out-useeffect-with-suspense-for-data-fetching-in-react-2leb
+
+https://www.youtube.com/watch?v=yQDsd1OVR08
