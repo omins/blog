@@ -294,7 +294,7 @@ Suspense가 어떤 문제를 해결하는지 어느정도 이해되었다면 이
 
 ### Code splitting
 
-Suspense를 활용한 Code splitting은 조건부로 컴포넌트를 렌더링하는 경우 사용하기 적합하다. 특정 이벤트에 따라 렌더링되는 모달 등의 컴포넌트가 이에 해당한다. React 공식 문서에 있는 [예제](https://codesandbox.io/s/d4fkng?file=/App.js&utm_medium=sandpack)도 조건부로 렌더링하는 경우를 다루고 있다. Next.js로 개발하는 경우 [`next/dynamic`](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading)을 사용할 수 있다.
+Suspense를 활용한 code splitting은 조건부로 컴포넌트를 렌더링하는 경우 사용하기 적합하다. 특정 이벤트에 따라 렌더링되는 모달 등의 컴포넌트가 이에 해당한다. React 공식 문서에 있는 [예제](https://codesandbox.io/s/d4fkng?file=/App.js&utm_medium=sandpack)도 조건부로 렌더링하는 경우를 다루고 있다. Next.js로 개발하는 경우 [`next/dynamic`](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading)을 사용할 수 있다.
 
 ```jsx
 import { Suspense, lazy, useState } from "react";
@@ -429,7 +429,7 @@ export default function Project({ activeProject, setActiveProject }) {
 
 ### With SSR (no streaming)
 
-Suspense는 streaming이 enabled 되지 않은 SSR 환경에서 다루기 까다로웠다. 정확히 말하면 서버 환경에서는 Suspense를 사용할 수 없었다. code splitting한 컴포넌트를 조건부로 Client에서 렌더링 할 수 있었지만, 데이터 fetching을 Suspense로 감싸도 서버에서 HTML을 렌더링 할 때 모든 fetch가 이루어지기 때문에 Suspense를 사용하지 못했다.
+Suspense는 streaming이 enabled 되지 않은 SSR 환경에서 다루기 까다로웠다. 정확히 말하면 서버 환경에서는 Suspense를 사용할 수 없었다. Code splitting한 컴포넌트를 조건부로 Client에서 렌더링 할 수 있었지만, 데이터 fetching을 Suspense로 감싸도 서버에서 HTML을 렌더링 할 때 모든 fetch가 이루어지기 때문에 Suspense를 사용하지 못했다.
 
 아래 예제를 실행해보면 서버에서 data를 모두 fetching한 뒤, 렌더링한다는 것을 알 수 있다. Suspense가 의도대로 동작하지 않는다. 하지만 이는 React 팀 블로그에서도 확인할 수 있는 내용이다.
 
