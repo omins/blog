@@ -12,7 +12,7 @@ image: /react/react-suspense/render-as-you-fetch.jpg
 
 ## Suspense란?
 
-[React Suspense](https://react.dev/reference/react/Suspense)는 비동기 작업의 선언적 처리를 도와주는 컴포넌트다. 자식 컴포넌트의 비동기 작업이 끝나기 전까지 fallback을 렌더링하며 기다릴 수 있도록 도와준다.
+[React Suspense](https://react.dev/reference/react/Suspense)는 비동기 작업의 선언적 처리를 도와주는 컴포넌트다. 자식 컴포넌트의 렌더링이 준비되기 전까지 fallback을 렌더링하며 기다릴 수 있도록 도와준다.
 
 더 고차원적으로 Suspense는 개발자 혹은 데이터 프레임워크가 비동기 데이터를 처리하는 동안 UI 라이브러리인 리액트와 소통하는 하나의 메커니즘이다.
 
@@ -20,7 +20,7 @@ image: /react/react-suspense/render-as-you-fetch.jpg
 
 ### 명령적인 비동기 처리
 
-비동기 데이터를 불러올 때는 1\) 로딩중 2\) 에러 3\) 성공 세 가지 경우에 대응해야 한다. Suspense를 사용하기 이전에는 각 상태를 컴포넌트 내에서 명령적으로 처리해주어야 했다. 아래 예제에서 Albums 컴포넌트는 `getAlbums()` 함수를 통해 데이터를 비동기적으로 불러온다. 그리고 컴포넌트 내에 로딩, 에러, 성공 각 상태에 대한 처리가 명시되어 있다.
+비동기 데이터를 불러올 때는 1) 로딩중 2) 에러 3) 성공 세 가지 경우에 대응해야 한다. Suspense를 사용하기 이전에는 각 상태를 컴포넌트 내에서 명령적으로 처리해주어야 했다. 아래 예제에서 Albums 컴포넌트는 `getAlbums()` 함수를 통해 데이터를 비동기적으로 불러온다. 그리고 컴포넌트 내에 로딩, 에러, 성공 각 상태에 대한 처리가 명시되어 있다.
 
 ```jsx:Albums.js
 export default function Albums({ artistId }) {
@@ -67,7 +67,9 @@ export default function ArtistPage({ artist }) {
 
 ```
 
-Albums 컴포넌트를 Suspense와 ErrorBoundary로 감싸면 Albums 컴포넌트는 View에 집중하고, 로딩과 에러에 대한 처리를 상위 컴포넌트인 Suspense와 ErrorBoundary에 위임할 수 있다(ErrorBoundary는 추후 포스팅에서 다루어보자). 컴포넌트가 하나의 책임을 가지며, 어떤 데이터를 사용할지 '**선언**'한다.
+Suspense를 이용해 선언적인 방법으로 다시 작성해보자.
+
+Albums 컴포넌트를 Suspense와 ErrorBoundary로 감싸면 Albums 컴포넌트는 View에 집중하고, 로딩과 에러에 대한 처리를 상위 컴포넌트인 Suspense와 ErrorBoundary에 위임할 수 있다(ErrorBoundary는 추후 포스팅에서 다루어보자). 컴포넌트는 어떤 데이터를 사용할지 '**선언**'하고, 이에 따른 View를 담당한다는 것이 더 명확해졌다.
 
 ```jsx:Albums.js
 export default function Albums({ artistId }) {
@@ -276,39 +278,47 @@ Suspense는 data fetching 외에도 [`React.lazy()`](https://react.dev/reference
 import { Suspense, lazy } from "react";
 import Loading from "./Loading.js";
 
-const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+const MarkdownPreview = lazy(() => import("./MarkdownPreview.js"));
 
-// ... 
+// ...
 <Suspense fallback={<Loading />}>
   <h2>Preview</h2>
   <MarkdownPreview />
- </Suspense>
+</Suspense>;
 // ...
-
 ```
 
 ## Suspense 적용하기
 
-Suspense를 적용하는 방법을 개략적으로 살펴보자.
+Suspense가 어떤 문제를 해결하는지 어느정도 이해되었다면 이를 프로젝트에 적용하는 방법을 알아보자.
 
 ### Code splitting
 
-Suspense를 활용한 Code splitting은 조건부로 컴포넌트를 렌더링하는 경우 사용하기 적합하다. 특정 이벤트에 따라 렌더링되는 모달 등의 컴포넌트가 이에 해당한다. React 공식 문서에 있는 [예제](https://codesandbox.io/s/d4fkng?file=/App.js&utm_medium=sandpack)도 조건부로 렌더링하는 경우를 다루고 있다. Next로 개발하는 경우 [`next/dynamic`](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading)을 사용할 수 있다.
+Suspense를 활용한 Code splitting은 조건부로 컴포넌트를 렌더링하는 경우 사용하기 적합하다. 특정 이벤트에 따라 렌더링되는 모달 등의 컴포넌트가 이에 해당한다. React 공식 문서에 있는 [예제](https://codesandbox.io/s/d4fkng?file=/App.js&utm_medium=sandpack)도 조건부로 렌더링하는 경우를 다루고 있다. Next.js로 개발하는 경우 [`next/dynamic`](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading)을 사용할 수 있다.
 
 ```jsx
-import { useState, Suspense, lazy } from 'react';
-import Loading from './Loading.js';
+import { Suspense, lazy, useState } from "react";
+import Loading from "./Loading.js";
 
-const MarkdownPreview = lazy(() => delayForDemo(import('./MarkdownPreview.js')));
+const MarkdownPreview = lazy(() =>
+  delayForDemo(import("./MarkdownPreview.js")),
+);
 
 export default function MarkdownEditor() {
   const [showPreview, setShowPreview] = useState(false);
-  const [markdown, setMarkdown] = useState('Hello, **world**!');
+  const [markdown, setMarkdown] = useState("Hello, **world**!");
   return (
     <>
-      <textarea value={markdown} onChange={e => setMarkdown(e.target.value)} />
+      <textarea
+        value={markdown}
+        onChange={(e) => setMarkdown(e.target.value)}
+      />
       <label>
-        <input type="checkbox" checked={showPreview} onChange={e => setShowPreview(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={showPreview}
+          onChange={(e) => setShowPreview(e.target.checked)}
+        />
         Show preview
       </label>
       <hr />
@@ -323,15 +333,15 @@ export default function MarkdownEditor() {
 }
 ```
 
-
 ### With data libraries
 
-Relay, react-query, SWR 등의 데이터 라이브러리는 Suspense를 지원한다. 비동기 데이터를 불러올 때 `suspense: true`를 설정해주고, Suspense로 감싸면 된다. Suspense라는 메커니즘에 맞게 데이터 라이브러리 author들이 개발하기 때문이다. [react-query](https://tanstack.com/query/v4/docs/react/guides/suspense)의 경우를 살펴보자.
+Relay, react-query, SWR 등의 데이터 라이브러리는 Suspense를 지원한다. 옵션에서 `suspense: true`를 설정해주고, 비동기 데이터를 불러오는 컴포넌트를 Suspense로 감싸면 된다. [react-query](https://tanstack.com/query/v4/docs/react/guides/suspense)의 경우를 살펴보자.
 
 아래와 같이 전체 적용할 수도 있고,
+
 ```jsx
 // Configure for all queries
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -339,26 +349,27 @@ const queryClient = new QueryClient({
       suspense: true,
     },
   },
-})
+});
 
 function Root() {
   return (
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-  )
+  );
 }
 ```
 
 개별 쿼리에도 설정할 수 있다.
+
 ```jsx
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 
 // Enable for an individual query
-useQuery({ queryKey, queryFn, suspense: true })
+useQuery({ queryKey, queryFn, suspense: true });
 ```
 
-`useSuspenseQuery()`를 사용할 수도 있는데, react-query 공식 문서의 [예제](https://codesandbox.io/p/sandbox/github/tannerlinsley/react-query/tree/main/examples/react/suspense)에서는 컴포넌트에서 `useSuspenseQuery()`로 데이터를 불러온다.
+`useSuspenseQuery()`를 사용할 수도 있는데, react-query 공식 문서의 [예제](https://codesandbox.io/p/sandbox/github/tannerlinsley/react-query/tree/main/examples/react/suspense)에서는 컴포넌트 내에서 `useSuspenseQuery()`로 데이터를 불러온다.
 
 ```jsx:Project.jsx
 import React from 'react'
@@ -416,11 +427,13 @@ export default function Project({ activeProject, setActiveProject }) {
 
 다만 데이터 라이브러리와 Suspense를 사용할 때 각 라이브러리의 동작 방식을 잘 확인해보고 사용하자. 잘 이해하고 사용하지 않으면 Suspense로 해결하려 했던 [waterfall 문제](#waterfall-방식의-렌더링)를 해결하지 못한다. 이 [블로그 글](https://happysisyphe.tistory.com/54)을 참고해보자.
 
-
 ### With SSR (no streaming)
-Suspense는 streaming이 enabled 되지 않은 SSR 환경에서 다루기 까다로웠다. code splitting한 컴포넌트를 조건부로 Client에서 렌더링하는 것은 잘 작동하지만, 데이터 fetching을 Suspense로 감싸도 서버에서 HTML을 렌더링 할 때 fetch가 이루어지기 때문에 Suspense의 역할을 하지 못했다.
 
-아래 예제를 실행해보면 서버에서 data를 모두 fetching한 뒤, 렌더링한다는 것을 알 수 있다.
+Suspense는 streaming이 enabled 되지 않은 SSR 환경에서 다루기 까다로웠다. 정확히 말하면 서버 환경에서는 Suspense를 사용할 수 없었다. code splitting한 컴포넌트를 조건부로 Client에서 렌더링 할 수 있었지만, 데이터 fetching을 Suspense로 감싸도 서버에서 HTML을 렌더링 할 때 모든 fetch가 이루어지기 때문에 Suspense를 사용하지 못했다.
+
+아래 예제를 실행해보면 서버에서 data를 모두 fetching한 뒤, 렌더링한다는 것을 알 수 있다. Suspense가 의도대로 동작하지 않는다. 하지만 이는 React 팀 블로그에서도 확인할 수 있는 내용이다.
+
+> However, the only supported use case was code splitting with React.lazy, and it wasn’t supported at all when rendering on the server. - [React v18.0](https://react.dev/blog/2022/03/29/react-v18#suspense-in-data-frameworks)
 
 ```jsx:Person.jsx
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -467,28 +480,71 @@ export default function ProfilePage() {
 
 ### With SSR (streaming)
 
-개인적으로 Suspense의 활용도와 이점을 끌어올려준 것이 Streaming이라고 생각한다. [New Suspense SSR Architecture in React 18](https://github.com/reactwg/react-18/discussions/37)에서 Suspense와 [`renderToPipeableStream()`](https://react.dev/reference/react-dom/server/renderToPipeableStream)을 활용한 진일보한 설계 패턴을 설명한다. React conf 2021에서도 이 주제에 대한 좋은 [keynote](https://www.youtube.com/watch?app=desktop&v=pj5N-Khihgc&list=PLNG_1j3cPCaZZ7etkzWA7JfdmKWT0pMsa&index=3)도 있다.
+개인적으로 Suspense의 활용도와 이점을 끌어올려준 것이 streaming이라고 생각한다. [New Suspense SSR Architecture in React 18](https://github.com/reactwg/react-18/discussions/37)에서 Suspense와 [`renderToPipeableStream()`](https://react.dev/reference/react-dom/server/renderToPipeableStream)을 활용한 진일보한 설계 패턴을 설명한다. React conf 2021에도 이 주제에 대한 좋은 [keynote](https://www.youtube.com/watch?app=desktop&v=pj5N-Khihgc&list=PLNG_1j3cPCaZZ7etkzWA7JfdmKWT0pMsa&index=3)가 있다.
 
+요약하자면, 기존 SSR에서의 문제는
 
+1. 렌더링 하기 위해 서버에서 모든 데이터를 불러와야 한다.
+2. 서버에서 보낸 HTML을 클라이언트에서 hydrate 하기 위해 모든 리소스를 불러와야 한다.
+3. 사용자 인터랙션을 허용하기 위해 모든 hydrate이 완료되어야 한다.
+4. 각 과정은 순차적으로 실행되며, 다음 과정을 blocking 한다.
 
+이 결과로 [TTFB, TTI, FCP](/posts/csr-ssr-ssg#렌더링-관련-지표)가 전반적으로 느려져 사용자 경험을 나쁘게 만든다.
 
+이 문제를 Suspense와 함께 아래 방법으로 해결한다.
+
+1. Streaming Server rendering
+   - 서버에서 HTML을 점진적으로 streaming한다.
+   - Suspense fallback을 먼저 응답으로 보내고, 데이터를 모두 fetching하면 컴포넌트를 inline script와 함께 마저 전달한다.
+   - 이로 인해 서버에서 모든 데이터를 불러오기 전에도 HTML을 클라이언트로 전송할 수 있다. (TTFB, FCP가 빨라진다)
+2. Selective Hydration
+   - 사용자 인터랙션이 중요한 컴포넌트부터 먼저 hydrate 한다.
+   - 만약 아직 로드되지 않은 컴포넌트가 있어도 로드되는 것을 기다리지 않는다.
+   - 이로 인해 hydrate을 더 빨리 시작할 수 있다. (TTI가 빨라진다)
+
+아래 예제에서 PostFeed 혹은 Weather 컴포넌트가 원격 데이터를 의존하고 있어도 Posts 컴포넌트와 Suspense fallback이 먼저 클라이언트로 전달된다. 원격 데이터를 의존하는 두 컴포넌트를 제외한 컴포넌트는 hydration을 시작하고, 모든 데이터가 준비되었을 때 두 컴포넌트 또한 렌더/hydrate된다.
+
+```jsx
+import { Suspense } from "react";
+import { PostFeed, Weather } from "./Components";
+
+export default function Posts() {
+  return (
+    <section>
+      <Suspense fallback={<p>Loading feed...</p>}>
+        <PostFeed />
+      </Suspense>
+      <Suspense fallback={<p>Loading weather...</p>}>
+        <Weather />
+      </Suspense>
+    </section>
+  );
+}
+```
+
+[Next.js App router](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming#streaming-with-suspense) 혹은 streaming을 지원하는 프레임워크를 사용하면 위와 같이 Suspense를 이용해 streaming 가능한 SSR을 구현할 수 있다. 이 설계 패턴에 대해 더 자세히 알고 싶다면 [New Suspense SSR Architecture in React 18](https://github.com/reactwg/react-18/discussions/37)을, Next.js app router와 streaming에 대해 더 알고 싶다면 Next.js 공식 문서 [What is Streaming?](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming#what-is-streaming)을 확인해보자.
 
 ## 맺으며
 
-React core team이 생각하는 [Suspense의 최종 비전](https://react.dev/blog/2022/03/29/react-v18#suspense-in-data-frameworks)은 모든 비동기 작업을 선언적으로 처리하는 컴포넌트라고 한다.
+React core team이 생각하는 [Suspense의 최종 비전](https://react.dev/blog/2022/03/29/react-v18#suspense-in-data-frameworks)은 모든 비동기 작업의 선언적 처리를 도와주는 것이다.
 
 > As in previous versions of React, you can also use Suspense for code splitting on the client with React.lazy. But our vision for Suspense has always been about much more than loading code — the goal is to extend support for Suspense so that eventually, the same declarative Suspense fallback can handle any asynchronous operation (loading code, data, images, etc).
+
+React 팀과 긴밀하게 협업한 Next.js 팀은 App router에서 streaming과 Suspense를 적극 활용하며 더 나은 사용자 경험에 대한 옵션을 제공하고 있으며, 앞으로 React 생태계 내 많은 라이브러리와 프레임워크가 이에 동참할 것으로 보인다.
+
+하지만 실제 프로젝트에 적용할 지는 개발자의 선택이다. 비슷한 비동기 작업을 처리하기 위한 코드를 반복적으로 작성하고 있다면, React 컴포넌트 내 데이터 의존성이 렌더링의 병목이 되고 있어 이를 해결하기 위한 방법을 찾고 있다면 Suspense가 하나의 선택지가 될 것이다.
 
 ## 참고자료
 
 [\<Suspense\>](https://react.dev/reference/react/Suspense)  
-[Nextjs conf](https://nextjs.org/conf)  
+[Next.js conf](https://nextjs.org/conf)  
 [React v18.0](https://react.dev/blog/2022/03/29/react-v18)  
 [Suspense rfc](https://github.com/reactjs/rfcs/blob/main/text/0213-suspense-in-react-18.md)  
 [Behavior change of suspense](https://github.com/reactwg/react-18/discussions/7)  
 [React.lazy rfc](https://github.com/reactjs/rfcs/blob/gaearon-patch-2/text/0000-lazy.md)  
 [Conceptual Model of React Suspense](https://blog.mathpresso.com/conceptual-model-of-react-suspense-a7454273f82e)  
 [NextJs에 React18 Suspense 적용하기 (with react-query 적용)](https://velog.io/@suyeon9456/NextJs%EC%97%90-React18-Suspense-%EC%A0%81%EC%9A%A9%ED%95%98%EA%B8%B0-with-react-query-%EC%A0%81%EC%9A%A9)  
-[[10분 테코톡] 클린의 서스펜스와 에러바운더리](https://www.youtube.com/watch?v=yQDsd1OVR08)    
-[React에서 선언적으로 비동기 다루기](https://jbee.io/react/error-declarative-handling-1/#server-side-rendering)    
-[React 18 Suspense — 실전 (절망편)](https://baekkyoungjung.medium.com/react-18-suspense-%EC%8B%A4%EC%A0%84-%EB%8F%84%EC%9E%85%EA%B8%B0-%EC%A0%88%EB%A7%9D%ED%8E%B8-a54072a8fffc)
+[React에서 선언적으로 비동기 다루기](https://jbee.io/react/error-declarative-handling-1/#server-side-rendering)  
+[React 18 Suspense — 실전 (절망편)](https://baekkyoungjung.medium.com/react-18-suspense-%EC%8B%A4%EC%A0%84-%EB%8F%84%EC%9E%85%EA%B8%B0-%EC%A0%88%EB%A7%9D%ED%8E%B8-a54072a8fffc)  
+[Streaming Server Rendering with Suspense](https://www.youtube.com/watch?app=desktop&v=pj5N-Khihgc&list=PLNG_1j3cPCaZZ7etkzWA7JfdmKWT0pMsa&index=3)  
+[Loading UI and Streaming](https://nextjs.org/docs/app/building-your-application/routing/loading-ui-and-streaming)
