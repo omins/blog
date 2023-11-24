@@ -1,0 +1,111 @@
+---
+title: React Server Components
+description: 우아하게 비동기 처리하기
+publishedAt: "2023-11-24"
+category: react
+tags:
+  - server-component
+---
+
+## Server Component란?
+
+서버 컴포넌트란 서버에서만 실행 및 렌더링되는 React 컴포넌트다. 서버 컴포넌트가 등장하기 이전에 우리가 React에서 사용하던 컴포넌트는 서버 컴포넌트와 분리하기 위해 클라이언트 컴포넌트라고 부른다.
+
+## 어떤 문제를 해결하는가?
+
+React 코어 팀의 Andrew Clark와 Sebastian Markbåge의 최근(2023.11.24 기준) [토크](https://www.youtube.com/watch?v=g5BGoLyGjY0), Dan Abramov의 Server component에 대한 [토크](https://www.youtube.com/watch?v=TQQPAU21ZUw)에서 확인할 수 있듯이, React 팀의 주요 고민 중 하나는 React 컴포넌트의 데이터 의존성에 대한 적절한 처리였다.
+
+비동기 데이터를 리액트의 컴포넌트적 사고방식과는 먼 방향으로 처리하고 있었기 때문이다. 구체적으로는 다음 두 가지이다.
+
+1. 주로 effect 혹은 hook에서 비동기 데이터를 처리하는데, 이에 대해 "로딩 중에는 이 UI를 보여주고, 에러가 있으면 이 UI를 보여줘"처럼 명령적으로 프로그래밍하는 경우가 일반적이었다. React로 프로그래밍 한 개발자라면 매우 익숙한 패턴이다.
+
+2. 부모 \<\> 자식 컴포넌트, API 응답 \<\> React 컴포넌트 간 결합이 강했다. 아래 예제를 살펴보자. 만약 TopTracks 컴포넌트를 제거하고 싶으면 API 내부에 topTracks 정보까지 제거해주어야 한다. 즉 API와 컴포넌트가 서로의 변경에 영향을 준다.
+
+```jsx
+function ArtistPage({ artistId }) {
+  const stuff = fetchAllStuffJustInCase();
+
+  return (
+    <ArtistDetails details={stuff.details} artistId={artistId}>
+      <TopTracks topTracks={stuff.topTracks} artistId={artistId} />
+      <Discography discography={stuff.discography} artistId={artistId} />
+    </ArtistDetails>
+  );
+}
+```
+
+다음과 같이 구조를 변경했고, fetching은 각 컴포넌트 내에서 수행한다고 가정하자. 각 컴포넌트별로 API를 호출하니 이제 괜찮을까?
+
+```jsx
+function ArtistPage({ artistId }) {
+  return (
+    <ArtistDetails artistId={artistId}>
+      <TopTracks artistId={artistId} />
+      <Discography artistId={artistId} />
+    </ArtistDetails>
+  );
+}
+```
+
+여전히 성능 측면에서 이슈가 있다. ArtistDetails 컴포넌트가 비동기 데이터를 모두 받기 전에 TopTracks 컴포넌트는 비동기 데이터에 대한 요청을 시작하지도 않는다. Waterfall이다. Facebook 팀은 Relay + GraphQL 조합으로 이 문제를 해결했다고 한다. 데이터를 한 번에 불러온 뒤 필요할 때마다 추가적인 통신 없이 컴포넌트에서 가져다 쓰는 것이다. 하지만 이 방법을 모든 React 생태계에 강요할 수는 없었다.
+
+(여기부터 수정하기)
+이어서 React 팀은 다음과 같은 고민을 했다고 한다.
+
+> 로딩 스피너를 데이터를 이용하는 주체(컴포넌트)에서 분리시키고 선언적으로 처리할 수 있는 방법은 없을까? 컴포넌트 간 혹은 API와 컴포넌트 간에 결합을 낮추는 방법은 없을까?
+
+이를 해결하기 위해 데이터 처리를 Suspense로 처리하는 것으로 시작해 streaming과 Server
+component에 이르렀고, React 개발 패러다임의 변화를 기대하고 있다.
+
+<Callout emoji="🚨">
+  React 내부적으로 더 구체적인 고민과 의사결정이 있을 수 있습니다. 위 내용은
+  Andrew Clark의 토크를 제 관점에서 요약한 것입니다.
+</Callout>
+
+명확히 어떤 문제를 해결하기만을 위해서 나왔다기 보다, Performance, DX, Composable 전반적으로
+
+처음 문제가 제기된 것은 비동기 작업의 , 컴포넌트의 데이터 의존성으로 인한 부모, 자식 컴포넌트 혹은 API, 컴포넌트 간 강한 결합이다.
+
+기존에 클라이언트 중심 React의 근본적인 도전 과제는, 서버를 이용함으로써 취할 수 있는 이점을 취하는 것이었다. 만약 어플리케이션을 개발할 때 서버를 더 활용할 수 있다면 다음과 같은 문제를 효율적으로 해결할 수 있다.
+
+### 1) Zero-Bundle-Size Components
+
+### 2) Full Access to the Backend
+
+### 3) Automatic Code Splitting
+
+### 4) No Client-Server Waterfalls
+
+### 5) Avoiding the Abstraction Tax
+
+### 6) Distinct Challenges, Unified Solution
+
+서버에서 렌더하지만 여전히 컴포넌트 코드를 클라이언트로 전송하는 기존 SSR과 다르게 서버에서 모든 실행을 마치고, 클라이언트에는 컴포넌트의 코드를 전송하지 않는다.
+
+- 왜 나왔지?
+- SSR과 뭐가 다르지?
+  - SSR의 장점은 빠르게 non-interactive html을 보낸 뒤, hydrate을 함으로써 유저가 더 빨리 콘텐츠를 볼 수 있도록 하는 것. 여전히 컴포넌트 코드는 다운받아야 함
+  - 모든 컴포넌트 코드가 client에 전달된다. 반면 서버 컴포넌트는 그렇지 않다.
+- 어떻게 쓰지?
+
+처음에는 waterfall 문제만을 해결할 수 있을 줄 알았는데, 더 많은 문제를 해결할 수 있다는 것을 알았다.
+
+데이터 의존성에 대한 처리
+Relay + GraphQL
+
+## 맺으며
+
+## 참고자료
+
+[Data Fetching with React Server Components](https://www.youtube.com/watch?v=TQQPAU21ZUw)
+[RFC: React Server Components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md)
+[React Labs: What We've Been Working On – March 2023](https://react.dev/blog/2023/03/22/react-labs-what-we-have-been-working-on-march-2023#react-server-components)
+[React Roundtable: Server Components, Suspense, and Actions](https://www.youtube.com/watch?v=g5BGoLyGjY0)
+[Introducing Zero-Bundle-Size React Server Components](https://react.dev/blog/2020/12/21/data-fetching-with-react-server-components)
+[React 18: 리액트 서버 컴포넌트 준비하기](https://tech.kakaopay.com/post/react-server-components/)
+[SSR과의 차이](https://news.ycombinator.com/item?id=25499171)
+
+https://nextjs.org/docs/app/building-your-application/rendering
+https://www.plasmic.app/blog/how-react-server-components-work
+https://patterns-dev-kr.github.io/rendering-patterns/react-server-components/
+https://ko.wikipedia.org/wiki/%EC%A7%81%EB%A0%AC%ED%99%94
