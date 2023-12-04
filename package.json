@@ -13,6 +13,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@giscus/react": "^2.3.0",
     "@mapbox/rehype-prism": "^0.8.0",
     "@plaiceholder/next": "^3.0.0",
     "@tailwindcss/typography": "^0.5.9",
