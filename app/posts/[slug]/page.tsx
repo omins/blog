@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BASE_OG, METADATA } from "@/lib/metadata";
 import { getPosts } from "@/lib/posts";
+import Comments from "@/components/comments";
 import JsonLd from "@/components/json-ld";
 import Header from "@/components/layout/post/header";
 import { Mdx } from "@/components/mdx-components";
@@ -30,6 +31,7 @@ export default function PostPage({ params }: PostProps) {
         <Mdx code={post.body.code} />
       </article>
       <RelatedPosts currentPost={post} />
+      <Comments />
     </>
   );
 }
