@@ -5,7 +5,7 @@ import Giscus from "@giscus/react";
 export default function Comments() {
   return (
     <div className="p-4">
-      <p className="mb-2 w-full text-center">
+      <p className="mb-2 w-full text-center text-black dark:text-white">
         🚨 댓글 위젯을 불러올 때 간헐적인 오류가 있어
         <br />
         라이브러리 수정 중이에요.
