@@ -1,4 +1,5 @@
 import { Post, allPosts } from "contentlayer/generated";
+import { isProduction } from "../../config";
 import { CATEGORY_ALL } from "../../constants/category";
 
 type CategoryWithCount = {
@@ -37,6 +38,10 @@ export function getPosts({
       ? postDataSource
       : postDataSource.filter((post) => post.category === category);
 
+  if (isProduction) {
+    filteredPosts = filteredPosts.filter((post) => !post.draft);
+  }
+
   return sortPosts([...filteredPosts], sortBy, order);
 }
 
@@ -73,7 +78,8 @@ export function getAllCategoriesWithCount(): {
   name: string;
   count: number;
 }[] {
-  const categoriesWithCount = allPosts.reduce<CategoryWithCount>((acc, cur) => {
+  const posts = getPosts();
+  const categoriesWithCount = posts.reduce<CategoryWithCount>((acc, cur) => {
     if (acc[cur.category]) {
       acc[cur.category] += 1;
       return acc;
@@ -96,12 +102,6 @@ export function getAllCategoriesWithCount(): {
   };
 
   return [categoryAll, ...categoriesWithCountArray];
-}
-
-export function getPostsByCategory(category: string) {
-  const posts = allPosts.filter((post) => post.category === category);
-
-  return posts;
 }
 
 export const getSlugFromPath = (path: string): string => {
