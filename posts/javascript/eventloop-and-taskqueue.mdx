@@ -12,6 +12,16 @@ draft: true
 
 ## 이벤트 루프
 
+이벤트 루프는 Javascript에서의 비동기 작업의 동시성을 관리하는 메커니즘이다. Javascript 엔진의 [실행 컨텍스트 스택](/posts/execution-context#실행-컨텍스트-스택)이 비었는지 확인하고, 비었다면 태스크 큐에 쌓인 태스크를 하나씩 꺼내 스택에 push하는 일을 담당한다. 이러한 작업을 통해 싱글 스레드인 Javascript가 비동기 작업을 동시적(concurrently)으로 처리할 수 있게 지원한다.
+
+Javascript 코드 실행은 Javascript 엔진의 실행 컨텍스트 스택을 통해 관리된다. 실행 컨텍스트 스택은 콜 스택이라고도 부르며, 이 글에서는 콜 스택이라는 용어로 통일하겠다. Javascript 엔진에는 콜 스택 외에도 객체가 저장되는 메모리 공간인 힙(heap)이 있으며, 콜 스택 내 실행 컨텍스트는 힙에 저장된 객체를 참조한다.
+
+Javascript 엔진은 단 하나의 콜 스택을 가진다. 그렇기 때문에 한 번에 하나의 실행 컨텍스트만 실행할 수 있으며, 나머지 실행 컨텍스트는 실행 중인 실행 컨텍스트가 스택에서 pop되기 전까지 대기해야 한다. 즉, Javascript 엔진은 한 번에 하나의 태스크만 처리할 수 있는 싱글 스레드 방식으로 동작한다.
+
+싱글 스레드 방식으로 동작하면 현재 실행 중인 실행 컨텍스트에 의해 메인 스레드가 blocking 될 수 있는데, 현재 실행 중인 태스크의 종료를 기다리지 않고 다음 태스크를 수행하는 비동기적인 방법으로 문제를 해결할 수 있다. 비동기적으로 수행한 작업(네트워크 요청/응답, 타이머)이 완료되면 태스크 큐에 콜백이 추가 되는데, 이 태스크를 하나씩 콜 스택으로 push하는 작업을 이벤트 루프가 담당한다.
+
+이처럼 이벤트 루프는 Javascript 비동기 작업이 어떠한 순서로 처리되는지 이해하는 데 핵심적인 개념이다.
+
 ## 콜 스택 (실행 컨텍스트 스택)
 
 ## 태스크 큐
@@ -30,3 +40,4 @@ draft: true
 [이벤트 루프와 매크로태스크, 마이크로태스크](https://ko.javascript.info/event-loop)
 [마이크로태스크](https://ko.javascript.info/microtask-queue)
 [What is an event loop anyway? | Philip Roberts | JSConf EU](https://www.youtube.com/watch?app=desktop&v=8aGhZQkoFbQ)
+[이벤트 루프](https://developer.mozilla.org/ko/docs/Web/JavaScript/Event_loop)
