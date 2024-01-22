@@ -197,15 +197,70 @@ HTML을 파싱하다가 `<script>`를 만나면 파싱이 blocking 된다고 했
 
 ## 4) 렌더
 
+응답 받은 문서를 파싱까지 완료했다면 실제 화면에 콘텐츠를 렌더해야 한다. 렌더링은 렌더 트리 생성, Layout, Paint, Composite로 나눌 수 있다.
+
 ### 렌더 트리 생성 (Style)
+
+브라우저의 렌더러는 DOM과 CSSOM을 조합하여 렌더 트리, 다른 말로 계산된 스타일 트리를 구성한다. DOM 루트 노드부터 '보이는' 모든 노드의 계산된 스타일을 포함한 렌더 트리를 구성한다. 이때 `<script>`, `<head>`와 그 자식 요소처럼 `display: none`이 설정된 보이지 않는 요소는 렌더 트리에서 제외된다. Chromium 소스 코드에서도 기본적으로 아래 요소는 렌더 트리에 포함하지 않음을 확인할 수 있다.
+
+```css
+/* https://html.spec.whatwg.org/multipage/rendering.html#hidden-elements */
+/* TODO(crbug.com/1231263): <area> should be display:none. */
+area {
+  display: inline;
+}
+base,
+basefont,
+datalist,
+head,
+link,
+meta,
+noembed,
+noframes,
+param,
+rp,
+script,
+style,
+template,
+title {
+  display: none;
+}
+input[type="hidden" i] {
+  display: none !important;
+}
+```
+
+#### `visibility: hidden vs opacity: 0 vs display: none`
+
+개발을 하다보면 간혹 요소가 보이지 않게 해야하는 요구사항을 마주한다. 이러한 요구사항은 세 가지 CSS 속성으로 구현할 수 있는데, 각 속성이 렌더링에 미치는 영향은 다르다. 간략하게 세 속성의 차이를 알아보자. 요약하자면 `display: none`이 설정된 요소는 렌더 트리에서 제외되지만 `visibility: hidden`과 `opacity: 0`이 설정된 요소는 렌더 트리에 포함된다. 또 opacity가 1 이하이면 새로운 [쌓임 맥락](https://developer.mozilla.org/ko/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)을 생성한다.
+
+[`display: none`](https://developer.mozilla.org/en-US/docs/Web/CSS/display)
+
+- 렌더 트리에서 제외
+- 공간을 차지하지 않음
+- 포커스를 받을 수 없음
+- 접근성 트리에서 제외
+
+[`visibility: hidden`](https://developer.mozilla.org/ko/docs/Web/CSS/visibility)
+
+- 렌더 트리에 포함
+- 공간을 차지함
+- 포커스를 받을 수 없음
+- 접근성 트리에서 제외
+
+[`opacity: 0`](https://developer.mozilla.org/ko/docs/Web/CSS/opacity)
+
+- 렌더 트리에 포함
+- 공간을 차지함
+- 포커스를 받을 수 있음
+- 접근성 트리에 포함
+- 새로운 쌓임 맥락 생성
 
 ### Layout
 
 ### Paint
 
 ### Composite
-
-`visibility: hidden vs opacity: 0 vs display: none`
 
 ## 얼마나 부하를 주면 뻗을까?
 
