@@ -20,7 +20,7 @@ const computedFields = {
   structuredData: {
     type: "object",
     resolve: (doc) => {
-      const url = process.env.BASE_URL || "https://omin.dev";
+      const url = process.env.BASE_URL || "https://www.omin.dev";
       // FIXME: Some reason, tags is not array at resolve function.
       // https://github.com/contentlayerdev/contentlayer/issues/150
       const keywords =
