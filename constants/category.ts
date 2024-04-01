@@ -9,4 +9,5 @@ export const CATEGORY_NAME_LABELS = {
   project: "Project",
   javascript: "Javascript",
   react: "React",
+  programming: "Programming",
 } as { [key: string]: string };
