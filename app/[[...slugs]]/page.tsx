@@ -120,7 +120,9 @@ function getTitle(category: string | null, pageNo: number): string {
 
 function getDescription(category: string | null): string {
   return category
-    ? `${CATEGORY_NAME_LABELS[category] || category} 관련 글을 확인해보세요.`
+    ? `See more articles related to ${
+        CATEGORY_NAME_LABELS[category] || category
+      }`
     : METADATA.description;
 }
 
