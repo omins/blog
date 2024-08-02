@@ -7,7 +7,7 @@ export default function ReadMore({ category }: { category: string }) {
       <Link href={`/category/${category}`}>
         <div className="rounded-lg bg-gray-200 px-3 py-1 dark:bg-gray-800">
           <span className="text-lg font-bold text-gray-900 dark:text-green">
-            {CATEGORY_NAME_LABELS[category]} 관련 글 더 보기
+            See more articles related to {CATEGORY_NAME_LABELS[category]}
           </span>
         </div>
       </Link>

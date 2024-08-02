@@ -8,7 +8,7 @@ type Props = {
 
 export default function GithubIssueCreateLink({
   url = DEFAULT_GITHUB_ISSUE_CREATE_URL,
-  label = "제보하기",
+  label = "Create an issue on GitHub",
 }: Props) {
   return (
     <Link href={url} className="font-sm underline">

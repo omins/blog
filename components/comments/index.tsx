@@ -16,7 +16,7 @@ export default function Comments() {
         emitMetadata="0"
         inputPosition="top"
         theme="preferred_color_scheme"
-        lang="ko"
+        lang="en"
         loading="lazy"
       />
     </div>

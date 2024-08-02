@@ -5,7 +5,7 @@ type Props = {
 
 export default function Fallback({
   children,
-  title = "오류가 발생했어요 🥲",
+  title = "Something went wrong 🥲",
 }: Props) {
   return (
     <main className="flex h-full flex-col items-center justify-center gap-8 px-4 py-[9rem] text-black dark:text-white">

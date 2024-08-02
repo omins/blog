@@ -21,7 +21,7 @@ export default function RelatedPosts({ currentPost }: Props) {
         <hr className="text-gray-400 dark:text-gray-500" />
       </div>
       <h2 className="mb-4 px-4 text-2xl font-bold text-black dark:text-white">
-        비슷한 글이 더 있어요.
+        Related Posts
       </h2>
       {relatedPosts.map((post) => (
         <PostCard key={post._id} post={post} />
