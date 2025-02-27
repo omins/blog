@@ -11,7 +11,7 @@ export const GET: APIRoute = async ({ props }) => {
   // );
   // const fontData: ArrayBuffer = await fontFile.arrayBuffer();
 
-  const fontData = await fs.readFile('./public/Inter-SemiBold.woff');
+  const fontData = await fs.readFile("./public/Inter-SemiBold.woff");
 
   return await satoriAstroOG({
     template: PostOgTemplate({ title: props.data.title }),

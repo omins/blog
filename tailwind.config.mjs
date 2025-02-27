@@ -1,24 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   theme: {
     extend: {
-      typography: theme => ({
+      typography: (theme) => ({
         DEFAULT: {
           css: {
             code: {
-              marginLeft: theme('spacing.1'),
-              marginRight: theme('spacing.1'),
-              padding: theme('spacing')['0.5'],
-              borderRadius: theme('spacing.1'),
-              border: `1px solid ${theme('colors.gray.300')}`,
-              fontWeight: 'normal',
+              marginLeft: theme("spacing.1"),
+              marginRight: theme("spacing.1"),
+              padding: theme("spacing")["0.5"],
+              borderRadius: theme("spacing.1"),
+              border: `1px solid ${theme("colors.gray.300")}`,
+              fontWeight: "normal",
               fontFamily: '"SF Mono", "Roboto Mono", Menlo, monospace',
             },
-            'code::before': {
+            "code::before": {
               content: "''",
             },
-            'code::after': {
+            "code::after": {
               content: "''",
             },
             pre: {
@@ -34,5 +34,5 @@ export default {
       }),
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [require("@tailwindcss/typography")],
 };

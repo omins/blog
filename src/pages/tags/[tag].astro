@@ -5,20 +5,20 @@ import { getCollection } from "astro:content";
 
 export async function getStaticPaths() {
   const allPosts = (await getCollection("blog")).sort(
-    (b, a) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf()
+    (b, a) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf(),
   );
 
   const uniqueTags = [
     ...new Set(
       allPosts
         .flatMap((post) => post.data.tags)
-        .filter((tag) => tag !== undefined)
+        .filter((tag) => tag !== undefined),
     ),
   ];
 
   return uniqueTags.map((tag) => {
     const filteredPosts = allPosts.filter(
-      (post) => post.data.tags && post.data.tags.includes(tag)
+      (post) => post.data.tags && post.data.tags.includes(tag),
     );
     return {
       params: { tag },
@@ -39,9 +39,11 @@ const { posts } = Astro.props;
         posts.map((post) => (
           <li class="flex space-x-2 items-baseline">
             <span class="text-gray-500 text-xs md:text-sm">
-                <FormattedDate date={post.data.pubDate} />
+              <FormattedDate date={post.data.pubDate} />
             </span>
-            <a href={`/posts/${post.id}/`} class="text-blue-500 md:text-lg">{post.data.title}</a>
+            <a href={`/posts/${post.id}/`} class="text-blue-500 md:text-lg">
+              {post.data.title}
+            </a>
           </li>
         ))
       }

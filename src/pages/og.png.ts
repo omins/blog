@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import { HomeOgTemplate } from "@/components/OgTemplates";
 
 export const GET: APIRoute = async ({ props }) => {
-  const fontData = await fs.readFile('./public/Inter-SemiBold.woff');
+  const fontData = await fs.readFile("./public/Inter-SemiBold.woff");
 
   return await satoriAstroOG({
     template: HomeOgTemplate(),
