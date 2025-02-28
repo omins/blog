@@ -1,6 +1,10 @@
 /** @type {import("prettier").Config} */
 
-module.exports = {
+/**
+ * @see https://prettier.io/docs/configuration
+ * @type {import("prettier").Config}
+ */
+const config = {
   bracketSpacing: true,
   semi: true,
   singleQuote: false,
@@ -9,3 +13,5 @@ module.exports = {
   tabWidth: 2,
   plugins: ["prettier-plugin-tailwindcss", "prettier-plugin-astro"],
 };
+
+export default config;
