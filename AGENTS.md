@@ -40,11 +40,11 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
 ### Testing
 
 - Playwright e2e tests live in `tests/e2e/`
+- Run tests with: `pnpm run test:e2e` (builds first, then runs headless)
 - Configuration in `playwright.config.ts` supports environment variables:
   - `PLAYWRIGHT_HOST` (default: `127.0.0.1`)
   - `PLAYWRIGHT_PORT` (default: `4321`)
   - `PLAYWRIGHT_BASE_URL` (default: `http://127.0.0.1:4321`)
-- Run `pnpm exec playwright test --ui` for interactive debugging
 - Tests verify locale switching, routing, theme persistence, and navigation
 
 ## 4. Working With Content

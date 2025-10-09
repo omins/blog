@@ -14,6 +14,9 @@ export default defineConfig({
     trace: "on-first-retry",
     actionTimeout: 10000,
     navigationTimeout: 15000,
+    launchOptions: {
+      slowMo: process.env.SLOW_MO ? parseInt(process.env.SLOW_MO) : 0,
+    },
   },
   webServer: {
     command: "pnpm run preview",
