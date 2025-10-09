@@ -46,6 +46,7 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
   - `PLAYWRIGHT_PORT` (default: `4321`)
   - `PLAYWRIGHT_BASE_URL` (default: `http://127.0.0.1:4321`)
 - Tests verify locale switching, routing, theme persistence, and navigation
+- CI: GitHub Actions workflow (`.github/workflows/playwright.yml`) runs e2e tests on PRs and pushes to main/master
 
 ## 4. Working With Content
 
