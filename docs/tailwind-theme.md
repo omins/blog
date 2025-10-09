@@ -26,4 +26,4 @@
 
 - Update tokens inside `tailwind.config.ts` under `theme.extend`
 - Maintain parity between light and dark variants whenever possible
-- Run `yarn dev` for rapid feedback or `yarn build` for final verification
+- Run `pnpm dev` for rapid feedback or `pnpm build` for final verification
