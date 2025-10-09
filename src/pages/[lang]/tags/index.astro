@@ -1,0 +1,76 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
+import { getPostsForLocale } from "@/lib/content/posts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  return SUPPORTED_LOCALES.map((locale) => ({ params: { lang: locale } }));
+}
+
+const langParam = Astro.params.lang;
+const locale = SUPPORTED_LOCALES.includes(langParam as Locale)
+  ? (langParam as Locale)
+  : SUPPORTED_LOCALES[0];
+
+const posts = await getPostsForLocale(locale);
+const tagCounts = posts.reduce<Record<string, number>>((acc, post) => {
+  for (const tag of post.entry.data.tags ?? []) {
+    acc[tag] = (acc[tag] ?? 0) + 1;
+  }
+  return acc;
+}, {});
+const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
+  (acc, candidate) => {
+    acc[candidate] = `/${candidate}/tags`;
+    return acc;
+  },
+  {} as Record<Locale, string | undefined>
+);
+---
+
+<BaseLayout title="Tags" locale={locale} localeLinks={localeLinks}>
+  <section class="px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-4xl flex-col gap-8">
+      <header class="space-y-3">
+        <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
+          {locale === "ko" ? "태그 살펴보기" : "Browse tags"}
+        </p>
+        <h1 class="text-3xl font-semibold tracking-tight text-text-light dark:text-text-dark">
+          {locale === "ko" ? "주제별 게시글" : "Topics"}
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          {
+            locale === "ko"
+              ? "태그를 선택하면 해당 언어에 번역된 글만 필터링됩니다."
+              : "Choose a tag to filter posts that are available in this locale."
+          }
+        </p>
+      </header>
+
+      {
+        tags.length > 0 ? (
+          <ul class="flex flex-wrap gap-2 text-sm text-slate-600 dark:text-slate-300">
+            {tags.map(([tag, count]) => (
+              <li>
+                <a
+                  class="inline-flex items-center gap-2 rounded-full border border-border-light px-3 py-1 transition hover:border-accent/60 hover:text-accent dark:border-border-dark"
+                  href={`/${locale}/tags/${tag}`}
+                >
+                  <span>#{tag}</span>
+                  <span class="text-xs text-slate-400 dark:text-slate-500">{count}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div class="rounded-3xl border border-dashed border-border-light bg-surface-light/50 p-10 text-center text-slate-500 dark:border-border-dark dark:bg-surface-dark/40 dark:text-slate-400">
+            <p>{LOCALE_FALLBACK_MESSAGES[locale]}</p>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

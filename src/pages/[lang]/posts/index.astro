@@ -1,0 +1,82 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
+import { getPostsForLocale } from "@/lib/content/posts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  return SUPPORTED_LOCALES.map((locale) => ({ params: { lang: locale } }));
+}
+
+const paramsLocale = Astro.params.lang;
+const locale = SUPPORTED_LOCALES.includes(paramsLocale as Locale)
+  ? (paramsLocale as Locale)
+  : SUPPORTED_LOCALES[0];
+
+const posts = await getPostsForLocale(locale);
+const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
+  (acc, candidate) => {
+    acc[candidate] = `/${candidate}/posts`;
+    return acc;
+  },
+  {} as Record<Locale, string | undefined>
+);
+
+const tagCounts = posts.reduce<Record<string, number>>((acc, post) => {
+  for (const tag of post.entry.data.tags ?? []) {
+    acc[tag] = (acc[tag] ?? 0) + 1;
+  }
+  return acc;
+}, {});
+const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+---
+
+<BaseLayout title="Posts" locale={locale} localeLinks={localeLinks}>
+  <section class="px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-5xl flex-col gap-10">
+      <header class="flex flex-col gap-3">
+        <h1 class="text-3xl font-semibold tracking-tight text-text-light dark:text-text-dark">
+          {locale === "ko" ? "전체 게시글" : "All Posts"}
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          {
+            locale === "ko"
+              ? "언어별로 게시글이 분리되어 있습니다. 필요한 언어를 상단에서 선택하세요."
+              : "Posts appear per locale. Use the language switcher above to change what you see."
+          }
+        </p>
+      </header>
+
+      {
+        tags.length > 0 && (
+          <div class="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+            {tags.map(([tag, count]) => (
+              <a
+                class="rounded-full border border-border-light px-3 py-1 transition hover:border-accent/60 hover:text-accent dark:border-border-dark"
+                href={`/${locale}/tags/${tag}`}
+              >
+                #{tag} · {count}
+              </a>
+            ))}
+          </div>
+        )
+      }
+
+      {
+        posts.length > 0 ? (
+          <div class="grid gap-6 md:grid-cols-2">
+            {posts.map((post) => (
+              <PostCard post={post} />
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-3xl border border-dashed border-border-light bg-surface-light/50 p-10 text-center text-slate-500 dark:border-border-dark dark:bg-surface-dark/40 dark:text-slate-400">
+            <p>{LOCALE_FALLBACK_MESSAGES[locale]}</p>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

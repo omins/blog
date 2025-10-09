@@ -1,0 +1,128 @@
+---
+title: 운영체제-as-a-sevice
+description: 운영체제의 기본 기능에 대해 살펴봅니다.
+publishedAt: "2023-10-19"
+tags: []
+category: os
+lang: ko
+slug: os-as-a-service
+draft: false
+---
+
+## Intro
+
+운영체제, 즉 OS는 세 가지 관점으로 바라볼 수 있다.
+
+1. System(컴퓨터)가 제공하는 서비스
+2. 사용자와 프로그래머가 컴퓨터와 상호작용하는 인터페이스
+3. 컴포넌트
+
+이 글에서는 운영체제를 하나의 서비스로 보고, 이 서비스가 제공하는 기능에 대해 알아본다.
+
+## OS Services
+
+운영체제를 하나의 서비스라는 관점으로 바라보았을 때 아래와 같은 기능을 사용자에게 제공한다.
+
+1. 사용자를 위한 기능
+2. 내부 시스템 효율을 위한 기능
+
+사용자를 위한 OS의 기능부터 하나씩 살펴보자.
+
+### 사용자를 위한 OS 기능
+
+OS는 사용자에게 다음과 같은 기능을 제공한다.
+
+1. User interface
+2. Program execution
+3. I/O Operation
+4. File system manipulation
+5. Communications
+6. Error detection
+
+#### User interface
+
+User interface, 줄여서 UI는 시스템과 사용자가 상호작용하는 방법을 제공하며, 크게 세 가지로 나뉜다.
+
+1. Command-line interface
+   - 프롬프트 입력창에 명령어를 입력해 컴퓨터와 상호작용
+
+2. Graphics user interface(GUI)
+   - 마우스, 키보드 등을 이용해 컴퓨터와 상호작용
+
+3. Touch screen interface(phone, tablet)
+   - 터치를 이용해 컴퓨터와 상호작용
+
+#### Program execution
+
+시스템은 프로그램을 메모리에 적재 후 실행한다. 또 프로그램은 실행 중에도 중단될 수 있다. 이때 OS는 프로그램의 실행과 중단을 관리한다.
+
+#### I/O Operation
+
+IO는 Input과 Output의 줄임말로, 시스템은 프로그램에 IO가 필요할 때마다 이를 제공한다. 사용자가 IO 장치를 직접 제어하지 않게 함으로써 효율성과 보안을 높일 수 있다.
+
+OS는 IO 장치를 관리하고, 사용자는 OS를 통해 IO 장치를 사용한다.
+
+#### File system manipulation
+
+프로그램은 파일과 디렉토리에 대한 읽기, 쓰기, 생성, 삭제 등의 연산을 할 수 있어야 하기 때문에 OS가 이를 제공한다.
+몇몇 OS는 파일과 디렉토리를 권한에 기반하여 접근할 수 있게 관리하기도 한다.
+
+#### Communications
+
+프로세스는 다른 프로세스와 정보를 주고받을 수 있는데, 이를 프로세스 간 통신이라고 한다. 프로세스 간 통신은 두 종류가 있다.
+
+1. 같은 컴퓨터 내 프로세스 간 통신
+2. 다른 컴퓨터이지만 네트워크로 연결된 프로세스 간 통신
+
+이때 커뮤니케이션 방법 또한 두 가지 방법으로 나뉜다.
+
+1. Shared memory
+   - 두 프로세스가 메모리를 공유하여 통신
+2. Message passing
+   - 정보를 담은 패킷 등 사전에 합의한 규약을 통해 통신
+
+#### Error detection
+
+OS는 오류를 감지하고 수정한다. 이때 오류는 하드웨어 오류와 소프트웨어 오류로 나뉜다.
+
+1. CPU and Memory hardware failure
+   - 메모리 오류 등
+2. I/O device failure
+   - 디스크 오류
+   - 네트워크 연결 오류
+   - 프린터 용지 부족 감지 등
+3. User Program
+   - 오버플로우
+   - 잘못된 메모리 할당
+   - 무한 루프 등
+
+이러한 오류가 발생할 때 OS는 프로세스를 종료하거나, 프로세스에 에러 코드를 반환함으로써 오류를 처리한다.
+
+<br />
+
+### 효율을 위한 OS 기능
+
+여러 개의 프로세스를 운영하는 시스템은 한정된 자원을 공유함으로써 효율적으로 사용할 수 있다. 공유 자원을 관리하기 위해 운영체제는 다음과 같은 기능을 제공한다.
+
+1. Resource allocation
+2. Logging
+3. Protection and security
+
+#### Resource allocation
+
+리소스의 종류는 다음과 같다.
+
+1. CPU cycles
+2. Main memory
+3. File Storage
+4. I/O devices
+
+예시로 CPU 자원을 효율적으로 관리하기 위해서 OS는 CPU 스케줄링을 수행한다.
+
+#### Logging
+
+어떤 프로그램이 얼만큼의 컴퓨팅 자원을 사용했는지 기록한다. usage를 파악하여 요금을 청구하는 경우나, 사용자의 프로그램이 얼마나 자원을 사용하는지 파악하는 경우 사용할 수 있다.
+
+#### Protection and security
+
+여러 프로세스가 동시 실행될 때 서로의 자원을 침범하지 않도록 보호한다. 시스템 자원 접근을 통제하고, 인증을 통해 외부 IO 장치 혹은 외부자의 무분별한 접근을 막는다.

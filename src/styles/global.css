@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background-light text-text-light antialiased transition-colors duration-300 ease-in-out;
+}
+
+:where(html.dark) body {
+  @apply bg-background-dark text-text-dark;
+}
+
+a {
+  @apply transition-colors duration-200 ease-in-out;
+}
+
+::selection {
+  background: theme("colors.accent.soft");
+  color: theme("colors.background.light");
+}

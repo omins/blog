@@ -1,0 +1,298 @@
+---
+title: "CSR, SSR, SSG"
+publishedAt: "2023-09-27"
+tags:
+  - rendering
+category: web
+lang: ko
+slug: csr-ssr-ssg
+draft: false
+---
+
+import Image from "@/components/mdx/Image.astro";
+
+## Why?
+
+이 글은 웹 어플리케이션에서 렌더링이 무엇인지, 그리고 왜 웹 개발자가 렌더링을 이해해야 하는지에 이어서 Client Side Rendering, Server Side Rendering, Static Site Generation과 같은 대표적인 웹 렌더링 전략이 각각 어떤 문제를 해결할 수 있는지 이해하는 것을 목적으로 합니다.
+
+## 렌더링은 뭘까?
+
+웹에서의 렌더링이란, 개발자가 작성한 코드를 웹 브라우저를 통해 사용자가 상호작용 할 수 있는 인터페이스로 표현하는 과정입니다.  
+이해를 돕자면,
+
+1.  건축 설계도면이 코드, 건축물이 렌더링 결과
+2.  레시피가 코드, 완성된 음식이 렌더링 결과입니다.
+
+이처럼 건축 설계 도면, 레시피 그 자체가 최종 사용자에게 주는 가치가 거의 없는 것처럼, 개발자가 작성한 코드 그 자체는 웹페이지를 방문하는 사용자에게 가치를 줄 수 없습니다.
+
+다만 일정한 규칙에 의해 브라우저가 개발자의 코드를 해석하고, 최종 사용자의 화면에 그 결과물을 표현(렌더링)함으로써 비로소 사용자에게 가치를 주는 웹 어플리케이션이 완성됩니다.
+
+이 글에서는 브라우저가 HTML, CSS, JS를 해석하고 표현하는 과정에 대해 깊게 다루지는 않습니다. 브라우저가 코드를 어떻게 해석하고 표현하는가에 대한 세부 내용은 아래 링크를 참고해주세요.
+
+- [원문](https://web.dev/howbrowserswork/)
+- [번역](https://d2.naver.com/helloworld/59361)
+
+대신, 더 큰 틀에서 어떤 렌더링 방식들이 있고, 이러한 방식들은 어떤 특징이 있는지, 어떤 문제를 해결하는지 등을 살펴보려 합니다.
+
+## 다양한 렌더링 방식을 왜 알아야 할까?
+
+어떤 렌더링 방식들이 있는지 이야기하기 이전에 웹 개발자가 렌더링과 그 방식에 대해 이해하는 이유는 무엇일지 이야기 해보려 합니다.
+
+렌더링 방법은 왜 중요할까요?  
+어떤 방법으로 렌더링 하는지는 웹페이지 반응 속도에 영향을 주고 이는 **사용자 경험에 큰 영향을 주기 때문**입니다.
+
+특히 사용자가 웹페이지에 접속하는 시점부터 웹페이지와 상호작용을 할 수 있는 데 걸리는 시간이 큰 영향을 줍니다.
+
+[구글 리서치 결과](https://www.thinkwithgoogle.com/marketing-strategies/app-and-mobile/mobile-page-speed-new-industry-benchmarks/), 페이지 로딩 시간에 따른 사용자 이탈율은 응답 시간 1 ~ 3초가 32%, 1 ~ 5초 사이가 90%로 페이지 로딩 시간과 사용자의 이탈율은 큰 상관이 있다고 합니다.
+
+<Image
+  src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/mobile-page-speed-new-industry-be.webp"}
+  alt="페이지 로딩 속도에 따른 사용자 이탈율 증가 추세"
+  width={800}
+  height={558}
+/>
+
+웹이 발전하면서 개발자가 다뤄야 할 데이터와 상태는 더 복잡해지는 반면, 사용자는 더 높은 기준을 갖고 웹 어플리케이션을 이용합니다. 따라서 웹 개발자는 적절한 렌더링 전략을 통해 최상의 유저 경험을 만들기 위해 노력해야 합니다.
+
+## 어떤 렌더링 방식이 있나?
+
+렌더링 방식에는 크게 Client Side Rendering, Server Side Rendering, Static Site Generation이 있습니다.
+
+### Client Side Rendering (CSR)
+
+CSR 방식에서는 사용자가 웹페이지에 접속하면, 서버가 실제 웹페이지의 콘텐츠가 아닌, 그 콘텐츠가 렌더링 될 껍데기만 보냅니다. 먼저 껍데기만 렌더링한 뒤, Javascript를 활용해 동적으로 콘텐츠를 렌더링합니다. 이때 필요한 데이터를 서버에 추가로 요청할 수 있습니다.
+
+```html:index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Website</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+예시로, Create-react-app으로 만든 React 앱의 index.html 파일을 열어보면 `<div id=”root”></div>`라는 껍데기만 있고, 페이지에 노출할 콘텐츠는 App.js 파일에 있습니다. 그리고 이를 index.js 파일에서 렌더링합니다.
+
+```jsx:app.js
+import logo from './logo.svg';
+import './App.css';
+
+function App() {
+  return (
+    <div className='App'>
+      <header className='App-header'>
+        <img src={logo} className='App-logo' alt='logo' />
+        <p>Hello CSR</p>
+        <a
+          className='App-link'
+          href='https://reactjs.org'
+          target='_blank'
+          rel='noopener noreferrer'
+        >
+          Learn React
+        </a>
+      </header>
+    </div>
+  );
+}
+
+export default App;
+```
+
+```jsx:index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+```
+
+위 예시에서 개발 서버를 활성화하고 Chrome Dev tool 네트워크 속도를 Slow 3G로 설정한 뒤 웹페이지를 새로고침하면 실제로 흰 배경의 화면만 보이는 것을 확인할 수 있습니다.
+
+<Image
+  src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/empty.png"}
+  alt="렌더링이 되지 않은 빈 화면"
+  width={309}
+  height={534}
+/>
+
+이처럼 Client Side Rendering에서는 서버가 빈 껍데기와 함께 JS bundle을 응답으로 주면, 그 JS 번들이 모두 다운로드 되고 실행될 때까지 유저는 의미없는 콘텐츠 혹은 로딩 인디캐이터만 보게 됩니다. 따라서, JS Bundle 사이즈가 커질수록 퍼포먼스가 느려집니다.
+
+또 CSR은 서버로부터 초기 전송되는 페이지의 속도는 빠르지만 페이지를 구성하기 위한 데이터를 클라이언트에서 서버 측에 추가로 요청하여 재구성해야 되기 때문에 페이지 구성의 완료 시점이 느려질 수 있습니다.
+
+<Image
+  src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/csr.webp"}
+  alt="CSR"
+  width={1116.25}
+  height={788}
+/>
+
+예시로 든 React와, Vue, Angular 등의 UI 라이브러리들이 기본적으로 CSR 방식을 채택하고 있습니다.
+
+### Server Side Rendering (SSR)
+
+SSR 방식에서는 사용자가 웹페이지에 접속하면, 서버가 웹페이지의 모든 콘텐츠를 포함한 HTML 문서를 생성해 응답을 보냅니다. 그리고 브라우저에서는 이 HTML을 표시하여 사용자가 빠르게 콘텐츠를 볼 수 있도록 합니다. 그리고 동시에 JS Bundle을 다운로드 받아 실행함으로써 웹페이지가 동작하도록 만듭니다.
+
+<Image
+  src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/ssr.webp"}
+  alt="SSR"
+  width={1400}
+  height={999}
+/>
+
+SSR 방식을 활용하면 CSR과 다르게 JS bundle이 로드되기 전 사용자가 의미있는 콘텐츠를 볼 수 있습니다. 이미 서버에서 콘텐츠를 포함한 HTML 문서를 응답했기 때문입니다. 이러한 특징 덕분에 SEO도 쉽게 구성할 수 있습니다.
+
+하지만 SSR에서도 JS Bundle이 모두 로드되고 실행되기 전까지는 웹페이지와 상호작용 할 수 없습니다. 사용자는 웹페이지가 이미 준비되었다고 생각하겠지만 사실은 아닙니다. 다만 사용자 입장에서 빈 화면을 보는 것보다는 웹페이지가 빠르게 응답하고 있다는 느낌을 줄 수 있습니다.
+
+SSR의 단점으로는 서버에서 데이터를 처리하여 렌더링 한 후 응답을 보내기 때문에 첫 응답까지 걸리는 시간이 CSR보다 늦습니다.
+
+React, Vue, Angular에서는 CSR뿐만 아니라, SSR 방식도 지원하고 있습니다. 또는 Next.js (React), Nuxt.js와 같은 Meta framework를 사용하면 더 편리하게 SSR 방식을 적용할 수 있습니다.
+
+아래 예시는 React에서 SSR을 적용하는 방식입니다. 서버에서 react-dom server api를 활용해 App 컴포넌트를 문자열로 렌더링한 결과를 응답으로 보냅니다.
+
+```jsx:server/index.js
+import { renderToString } from "react-dom/server";
+
+// The route handler syntax depends on your backend framework
+app.use("/", (request, response) => {
+  const html = renderToString(<App />);
+  response.send(html);
+});
+```
+
+클라이언트에서는 처음부터 페이지를 렌더링하는 대신에 서버에서 응답한 HTML에 리액트 컴포넌트만 추가하기 위해 [createRoot](https://react.dev/reference/react-dom/client/createRoot)이 아닌 [hydrateRoot](https://react.dev/reference/react-dom/client/hydrateRoot) 메소드를 호출합니다.
+
+```jsx:client/index.js
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.hydrateRoot(document.getElementById("root"));
+root.render(<App />);
+```
+
+### Static Site Generation (SSG)
+
+Static Rendering이라 불리기도 하는 SSG 방식에서는 사용자가 웹페이지에 접속할 때가 아닌, 개발자가 코드를 빌드할 때 HTML을 미리 렌더링하는 방법입니다.
+
+SSR에서는 사용자가 접속할 때 서버에서 웹페이지 내 콘텐츠를 HTML의 형태로 생성해 응답했지만, SSG에서는 미리 생성된 HTML을 즉각 전달함으로써 다른 렌더링 방식보다도 빠르게 콘텐츠를 렌더링 할 수 있습니다.
+
+다만 한계점으로는 빌드타임에 페이지 콘텐츠를 모두 생성하기 때문에 각 사용자를 위한 맞춤형 정보를 담기 어렵습니다.
+
+<div>
+  <Image
+    src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/server-side-rendering.png"}
+    alt="SSR"
+    width={1386}
+    height={744}
+  />
+  <Image
+    src={"/assets/blog/csr-ssr-ssg/ko/web/csr-ssr-ssg/static-generation.png"}
+    alt="SSG"
+    width={1386}
+    height={744}
+
+/>
+
+</div>
+
+React에서 자체적으로도 해당 기능을 제공하며, Next.js의 Static Export, React 기반 프레임워크 Gatsby를 이용해서도 SSG를 구현할 수 있습니다.
+
+```js:server/index.js
+import { renderToStaticMarkup } from "react-dom/server";
+
+// The route handler syntax depends on your backend framework
+app.use("/", (request, response) => {
+  const html = renderToStaticMarkup(<Page />);
+  response.send(html);
+});
+```
+
+## 렌더링 관련 지표
+
+무엇이든 측정을 해야 잘되는지 아닌지 알고, 개선할 수 있겠죠. 아래는 렌더링 방식의 효율성을 측정할 때 사용되는 주요 지표입니다.
+
+[FCP (First Contentful Paint)](https://web.dev/fcp/)
+
+- 웹페이지 로딩 시작부터 웹페이지 내 첫 콘텐츠가 렌더링 시점까지의 시간. 콘텐츠는 텍스트, 이미지, `<svg>` 요소, 흰 배경이 아닌 `<canvas>`요소를 포함
+
+[TTI (Time to Interact)](https://web.dev/tti/#what-is-tti)
+
+- 웹페이지 로딩 시작부터 페이지 내 리소스가 완전히 로드되어 사용자와 안정적으로 상호작용 할 수 있는 시점까지의 시간
+
+[TTFB (Time to First Byte)](https://web.dev/ttfb/)
+
+- 리소스 요청에 대한 응답의 첫 바이트가 도착한 시기
+
+아래는 각 지표가 렌더링 방식에 따라 어떻게 변하는지 나타낸 표입니다.
+
+|      | CSR  | SSR                               | SSG  |
+| ---- | ---- | --------------------------------- | ---- |
+| FCP  | 느림 | 중간                              | 빠름 |
+| TTI  | 느림 | 중간 (항상 CSR보다 빠르지는 않음) | 빠름 |
+| TTFB | 중간 | 느림                              | 빠름 |
+
+### 요약
+
+CSR, SSR, SSG을 각각 음식을 먹는 것에 비유하면 다음과 같습니다.
+
+|      | CSR                                                                         | SSR                                                                                     | SSG                                                   |
+| ---- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 방법 | 직접 장 봐서 먹기                                                           | 밀키트 조리해서 먹기                                                                    | 배달 음식 먹기                                        |
+| 특징 | 필요한 재료(데이터)를 직접 골라 구매한다. 요리(렌더링)도 본인이 직접한다.   | 필요한 재료(데이터)는 이미 구성되어 있다. 요리(렌더링)은 간단하게 조리 수준으로만 한다. | 이미 완성된 형태로 음식이 제공된다. 먹기만 하면 된다. |
+
+## SSR, CSR, SSG 언제 적용할까?
+
+그렇다면 각 렌더링 방식은 어떤 상황에 적합할까요? 정답은 없겠지만 아래와 같은 상황을 떠올려 볼 수 있습니다.
+
+### SSR
+
+- 첫 페이지 로딩 속도가 중요할 때
+- SEO가 중요할 때
+- 보안 상의 이슈로 서버에서 데이터를 받아오고 클라이언트에서는 숨겨야 할 때
+
+예시) 네이버 블로그  
+실제로 네이버 블로그 서비스의 경우 사용자가 텍스트 콘텐츠 위주로 소비하기 때문에 빠른 로딩이 중요하여 [SSR을 도입](https://d2.naver.com/helloworld/7804182)했다고 합니다.
+
+### CSR
+
+- 유저와 상호작용하며 클라이언트에서 관리해야 하는 상태가 복잡하고 많을 때
+- 클라이언트에서의 상태 변경이 잦을 때
+- 사용자 경험과 상호작용 속도가 중요할 때
+
+예시) 사내 어드민 툴  
+이전에 일하던 회사에서 사용자와 빠른 상호작용이 중요한 사내 어드민 툴을 CSR로 구현한 적이 있습니다. 반면 어드민이 아닌 같은 서비스의 웹사이트는 SEO를 잘 적용하기 위해 SSR을 도입했습니다.
+
+### SSG
+
+- 한 번 콘텐츠를 발행하면 잘 변하지 않는 경우
+- 유저와의 상호작용 보다는 정적인 콘텐츠의 빠른 전달이 중요할 때
+
+예시) 개인 블로그  
+한 번 발행한 뒤 사용자 별 커스터마이징이 크게 필요하지 않은 블로그는 SSG로 구현하기에 적합할 것입니다.
+
+## 참고자료
+
+[Rendering on the Web](https://web.dev/rendering-on-the-web/?hl=en)  
+[The Benefits of Server Side Rendering Over Client Side Rendering](https://medium.com/walmartglobaltech/the-benefits-of-server-side-rendering-over-client-side-rendering-5d07ff2cefe8)  
+[Learn | Next.js](https://nextjs.org/learn/foundations/how-nextjs-works/client-and-server)  
+[Rendering on the Web: Performance Implications of Application Architecture (Google I/O ’19)](https://youtu.be/k-A2VfuUROg)  
+[Building Your Application: Rendering](https://nextjs.org/docs/app/building-your-application/rendering#rendering-environments)  
+[어서 와, SSR은 처음이지? - 도입 편](https://d2.naver.com/helloworld/7804182)  
+[Rendering: Composition Patterns](https://nextjs.org/docs/app/building-your-application/rendering/composition-patterns)  
+[Rendering: Client-side Rendering (CSR)](https://nextjs.org/docs/pages/building-your-application/rendering/client-side-rendering)  
+[Client-side vs. server-side rendering: why it's not all black and white](https://www.freecodecamp.org/news/what-exactly-is-client-side-rendering-and-hows-it-different-from-server-side-rendering-bd5c786b340d/)  
+[\[ 기술 스터디 \] SSR과 CSR의 차이](https://velog.io/@vagabondms/%EA%B8%B0%EC%88%A0-%EC%8A%A4%ED%84%B0%EB%94%94-SSR%EA%B3%BC-CSR%EC%9D%98-%EC%B0%A8%EC%9D%B4)  
+[왜 CSR(Client Side Rendering)에서 SEO가 단점일까?](https://minsoftk.tistory.com/68)  
+[\[10분 테코톡\] 타미의 CSR과 SSR](https://youtu.be/TXzwuaXQN2U?si=MiHYEqiSYGjeD2Om)  
+[\[10분 테코톡\] 🎨 신세한탄의 CSR&SSR](https://youtu.be/YuqB8D6eCKE?si=Fqh6PqE8ZsBqaWH0)  
+[renderToString – React](https://react.dev/reference/react-dom/server/renderToString)  
+[\[SSR\] 서버사이드렌더링(2) - SSR 직접구현, ReactDOMServer](https://velog.io/@kwonh/SSR-%EC%84%9C%EB%B2%84%EC%82%AC%EC%9D%B4%EB%93%9C%EB%A0%8C%EB%8D%94%EB%A7%812-SSR-%EC%A7%81%EC%A0%91%EA%B5%AC%ED%98%84-ReactDOMServer)  
+[Find out how you stack up to new industry benchmarks for mobile page speed](https://www.thinkwithgoogle.com/marketing-strategies/app-and-mobile/mobile-page-speed-new-industry-benchmarks/)

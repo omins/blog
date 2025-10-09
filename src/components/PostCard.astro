@@ -1,0 +1,50 @@
+---
+import { formatPublishedDate } from "@/lib/datetime";
+import type { NormalizedBlogEntry } from "@/lib/content/posts";
+
+interface Props {
+  post: NormalizedBlogEntry;
+}
+
+const { post } = Astro.props;
+const { entry } = post;
+const tagList = entry.data.tags ?? [];
+---
+
+<article
+  class="group flex flex-col gap-4 rounded-3xl border border-border-light bg-surface-light/70 p-6 shadow-sm transition hover:-translate-y-1 hover:border-accent/60 hover:shadow-lg dark:border-border-dark dark:bg-surface-dark/70"
+>
+  <div
+    class="flex items-center justify-between gap-3 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400"
+  >
+    <span>{formatPublishedDate(entry.data.publishedAt, post.locale)}</span>
+    <span
+      class="rounded-full bg-accent/10 px-3 py-1 text-accent dark:bg-accent/20 dark:text-accent-soft"
+    >
+      {entry.data.category}
+    </span>
+  </div>
+  <div class="space-y-2">
+    <h2
+      class="text-xl font-semibold tracking-tight text-text-light transition-colors group-hover:text-accent dark:text-text-dark"
+    >
+      <a href={post.href}>{entry.data.title}</a>
+    </h2>
+    {
+      entry.data.description && (
+        <p class="text-sm text-slate-600 dark:text-slate-300">{entry.data.description}</p>
+      )
+    }
+  </div>
+  {
+    tagList.length > 0 && (
+      <ul class="flex flex-wrap gap-2 text-xs">
+        {tagList.map((tag: string) => (
+          <li class="rounded-full border border-border-light px-2 py-1 text-slate-500 transition group-hover:border-accent/60 group-hover:text-accent dark:border-border-dark dark:text-slate-400">
+            #{tag}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</article>

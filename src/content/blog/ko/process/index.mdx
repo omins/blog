@@ -1,0 +1,114 @@
+---
+title: 프로세스란?
+publishedAt: "2023-11-26"
+tags:
+  - process
+category: os
+lang: ko
+slug: process
+draft: false
+---
+
+## Intro
+
+프로세스란, 실행 중인 프로그램을 의미한다. 프로그램이 실행되는 과정은 [이 글](/posts/linker-and-loader)을 참고할 수 있다. Binary 형태의 프로그램이 메모리에 적재되면 이를 프로세스라 한다.
+
+또한 역사적 의미의 Job을 현대 컴퓨터 시스템에서는 프로세스라고 하며, 이는 최소 실행 단위를 뜻한다.
+
+시스템도 프로세스의 모음으로 이루어져 있으며, OS process는 시스템의 코드를 실행하고, user process는 사용자의 코드를 실행한다.
+
+## 프로세스의 등장
+
+초기 컴퓨터는 한 번에 하나의 프로그램만을 실행할 수 있었고, 하나의 프로그램이 시스템 자원을 독점할 수 있었다. 하지만 컴퓨터가 발전하면서 여러 프로그램이 동시에 메모리에 적재되어 실행할 수 있게 되었고, 이에 따라 더욱 더 견고한 제어와 구획화가 필요했다.
+
+이때 등장한 것이 바로 프로세스다. 프로세스는 실행 중인 프로그램을 의미하며, 프로그램의 코드와 프로그램이 실행되기 위해 필요한 자원들을 포함한다.
+
+## Memory layout
+
+프로세스가 어떻게 메모리를 구성하고 활용하는지 살펴보자. 프로세스의 메모리 영역은 4가지로 나뉜다.
+
+1. Text section
+   - 프로그램의 실행 코드가 위치한다.
+   - 크기는 고정되어 있으며, 실행 중 변하지 않는다.
+
+2. Data section
+   - 전역 변수가 위치한다.
+   - Text와 마찬가지로 크기가 고정이다.
+
+3. Heap section
+   - 동적 메모리 할당되는 영역이다.
+   - 동적 메모리 할당/해제 시 크기가 커지거나 줄어들 수 있다.
+4. Stack section
+   - 함수, 지역변수, 리턴 값 등 임시적인 데이터가 위치한다.
+   - 함수 호출, 지역 변수, 리턴 값 등이 사용될 때 크기가 커지거나 줄어들 수 있다.
+
+Text와 Data는 고정 크기인 반면 Stack과 Heap은 동적이다. 따라서 Stack이나 Heap이 커지더라도, OS는 두 영역이 서로 침범하지 않도록 보장해야 한다.
+
+아래는 C언어로 작성된 프로그램의 메모리 구조를 나타낸다.
+
+```C
+#include <stdio.h>
+#include <stdlib.h>
+
+int global_var; // Data 영역에 저장
+int global_initialized_var = 5; // Data 영역에 저장
+
+int main(int argc, char *argv[]) {
+  int *values; // Stack 영역에 저장
+  int i; // Stack 영역에 저장
+
+  values = (int *) malloc(sizeof(int) * argc); // Heap 영역에 저장
+  for (i = 0; i < argc; i++) {
+    values[i] = i;
+  }
+  return 0;
+}
+```
+
+## 두 개의 프로세스가 하나의 프로그램을 실행하는 경우
+
+하나의 프로그램을 이용해 여러 개의 프로세스가 생성될 수 있으며, 각각 독립적인 실행 시퀀스를 갖는다. 또 프로세스는 그 자체로 다른 프로세스의 실행 환경의 역할을 한다.
+
+크롬 브라우저를 여러 개 여는 경우도 하나의 프로그램으로 여러 개의 프로세스를 생성하는 것이다.
+
+## Process state
+
+프로세스가 실행되면 프로세스는 다음과 같은 상태를 가진다.
+
+1. new
+   - 프로세스가 생성된 상태
+2. ready
+   - 프로세스가 프로세서에 할당되기 위해 기다리는 상태
+
+3. running
+   - 실행되는 상태
+4. waiting
+   - 프로세스가 어떤 이벤트를 기다리는 상태 (I/O 등)
+5. terminated
+   - 프로세스가 실행을 마친 상태
+
+## Process Control Block (PCB)
+
+각 프로세스는 Process control block(PCB)로 표현되며, 프로세스마다 PCB를 갖고있다. PCB는 다음과 같은 정보를 포함한다.
+
+1. Process state
+   - new, ready, running 등의 상태를 나타낸다.
+
+2. Program counter
+   - 프로세스가 다음에 실행할 명령어의 주소를 저장한다.
+
+3. CPU registers
+   - 프로세스가 실행되는 동안 CPU 레지스터에 저장되는 값들을 저장한다. interrupt 발생 후 rescheduled 될 때 계속해서 사용된다.
+
+4. CPU scheduling information
+   - 프로세스 우선순위, 스케줄링 큐에 대한 포인터, 다른 스케줄링 매개변수 등을 저장한다.
+5. Memory management information
+   - 최소, 최대 레지스터, 페이지 테이블 세그먼트 테이블 등의 값을 저장한다.
+
+6. I/O status information
+   - 할당된 I/O 장치 목록, 열린 파일 목록 등의 정보를 저장한다.
+
+7. Accounting information
+   - CPU 사용시간과 제한 사용시간, 프로세스 번호 등의 정보를 저장한다.
+
+Linux에서는 PCB를 [task_struct](https://github.com/torvalds/linux/blob/master/include/linux/sched.h)라는 구조체로 표현한다.

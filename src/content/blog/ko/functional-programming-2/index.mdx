@@ -1,0 +1,544 @@
+---
+title: 함수형 디자인 패턴
+description: 함수자와 모나드
+publishedAt: "2024-04-28"
+tags:
+  - funtional programming
+category: programming
+lang: ko
+slug: functional-programming-2
+draft: false
+---
+
+## 서론
+
+이 글은 함수형 자바스크립트 5장 `복잡성을 줄이는 디자인 패턴`을 읽고 정리한 글이며, 함수자와 모나드에 대해 알아본다. 이론적으로 모나드가 무엇인지보다, 어떤 문제를 해결할 수 있는지에 초점을 맞추어 살펴본다.
+
+## 배경
+
+프로그램을 작성하다보면 에러 처리는 피할 수 없는 문제이다. 하지만 에러를 명령형 프로그래밍으로 처리한다면 다음과 같은 문제가 발생한다.
+
+1. try-catch와 if 블록으로 도배된 프로그램은 그 규모가 커질수록 헤아리기 어려워진다.
+2. 참조 투명성의 원리에 위배된다.
+3. 다른 함수형 장치처럼 합성이나 체이닝을 할 수 없다.
+4. 전체 시스템에 영향을 미치는 부수효과를 일으킨다.
+
+하지만 우리는 일상적으로 이 데이터가 null이거나 undefined일 수 있다는 사실, 혹은 예기치 못한 에러가 발생할 수 있다는 사실을 염두에 두고 방어 코드를 작성한다. 이러한 방어 코드로 프로그램을 감싸는 것 외에 더 나은 방법은 없을까? 함수형 프로그래밍에서는 이러한 문제를 해결하기 위해 함수자와 모나드를 활용한다.
+
+## 함수자
+
+함수자는 컨테이너로 값을 감싸고, 함수 맵핑으로만 값에 접근할 수 있는 자료구조다. 예시를 통해 알아보자. 아래 Wrapper 클래스는 값을 감싸고, map과 fmap 메소드를 통해서만 값에 접근할 수 있도록 허용한다.
+
+```js
+class Wrapper {
+  constructor(value) {
+    this._value = value;
+  }
+
+  fmap(f) {
+    return new Wrapper(f(this._value));
+  }
+
+  map(f) {
+    return f(this._value);
+  }
+}
+```
+
+아래와 같이 map을 통해 컨테이너로 감싸진 값에 접근할 수 있다. map은 컨테이너 내부 값에 함수를 적용한 결과를 반환한다.
+
+```js
+const wrap = (value) => new Wrapper(value); // 컨테이너를 생성하는 헬퍼 함수
+
+const increment = R.add(1);
+const two = wrap(2);
+const result = two.map(increment);
+console.log(result); // 3
+```
+
+fmap은 map과 비슷하지만 컨테이너에서 내부 값에 함수를 적용하고 이를 다시 컨테이너로 감싼 결과를 반환한다. 상자에서 값을 꺼내 새로운 상자로 옮겨담는 것과 같다. fmap은 인터페이스가 동일한 객체(컨테이너)를 반환하기 때문에 체이닝이 가능하다.
+
+```js
+const decrement = R.add(-1);
+const three = wrap(3);
+three.fmap(decrement).fmap(decrement).map(console.log); // 1
+```
+
+위 예시와 같이 어떤 컨테이너로 보호된 값을 얻으려면 반드시 함수를 컨테이너에 맵핑해야 한다. 우리가 일상적으로 사용하는 배열의 map과 filter도 함수자의 예시다.
+
+```js
+const arr = [1, 2, 3];
+arr.map(increment).filter(isEven); // [2, 4]
+```
+
+### 함수자의 전제조건
+
+함수자가 되기 위한 전제조건은 다음과 같다.
+
+1. 부수효과가 없어야 한다.
+   - 콘텍스트에 R.identity를 적용하면 동일한 값을 얻는다.
+2. 합성이 가능해야 한다.
+   - 합성 함수에 fmap을 적용한 것과 fmap함수를 체이닝한 것이 동일하다.
+     ```js
+     two.fmap(R.compose(plus3, R.tap(console.log))).map(console.log); // 5
+     ```
+
+컨테이너를 생성해서 원본값을 변화시키지 않은 채 안전하게 연산을 수행하는 것이 함수자의 존재이유이다.
+
+## 모나드
+
+함수자가 건드리는 컨테이너가 모나드다. 모나드의 목적은 어떤 자원을 추상하여 특정 집합 안으로 반환값을 한정시킴으로써 그 속에 든 데이터를 안전하게 처리하는 것이다. 모나드 예제를 살펴보기 전에 함수자의 한계점을 알아보자.
+
+아래 예제는 에러가 발생할 수 있는 연산을 try-catch 블록 대신 `wrap()`으로 감싸 반환한 예제다.
+
+```js
+const findStudent = R.curry((db, id) => wrap(db.find(id))); // 안전한 컨테이너에 담아 반환
+const getAddress = (student) => wrap(student.fmap(R.prop("address")));
+const studentAddress = R.compose(getAddress, findStudent(DB("student1"))); // -> Wrapper(Wrapper(address))
+studentAddress("444-44-4444").map(R.identity).map(R.identity); // 중첩되어있기 때문에 두번 map을 해줘야 한다.
+```
+
+각 연산을 안전한 콘텍스트로 감쌌지만 중첩된 콘텐스트를 해결해야 한다. 이는 모나드를 구현하면서 해결해보자. 아래에서는 Empty, Maybe, Either, IO 모나드를 구현해본다.
+
+### Empty 모나드
+
+모나드를 통해 특정 케이스를 특정 로직에 위임하여 처리할 수 있다. 컨테이너 내부 값이 숫자이고, 해당 숫자를 절반으로 나누는 `half()`함수를 적용하고 싶다면 아래와 같이 구현할 수 있을 것이다.
+
+```js
+const wrap = (value) => new Wrapper(value);
+const two = wrap(2);
+const half = (n) => n / 2;
+two.fmap(half); // 1
+```
+
+그런데 만약 짝수에만 half를 적용하고 싶다면? 홀수인 경우 null을 반환하거나 예외를 던지는 것도 방법이겠지만 올바른 입력값에 대해서는 올바른 값을 반환하고, 그렇지 않은 경우는 무시하게끔 만들어보자. 그러기 위해 아래 Empty 모나드를 활용할 수 있다.
+
+```js
+class Empty {
+  map(f) {
+    // 아무것도 하지 않고 무시
+    return this;
+  }
+
+  fmap(_) {
+    // 다시 Empty를 반환
+    return new Empty();
+  }
+
+  toString() {
+    return "Empty()";
+  }
+}
+
+const empty = () => new Empty();
+const isEven = (n) => Number.isFinite(n) && n % 2 === 0;
+const half = (n) => (isEven(n) ? wrap(n / 2) : empty()); // 짝수일 때만 half를 적용
+half(2).map(console.log); // 1
+half(1).map(console.log); // 무시
+```
+
+half의 반환값은 항상 Wrapper 혹은 Empty이다. Empty는 Wrapper의 메소드와 동일한 메소드를 가지고 있기 때문에 컨테이너에 홀수 값(예외)이 있더라도 안전하게 연산을 수행할 수 있다.
+
+이와 같이 컨테이너 안으로 값을 승급(`A -> Wrapper(A)`)하고 , 규칙을 정해 통제한다는 생각으로 자료형을 생성하는 것이 바로 모나드다. 위 예제에서는 Wrapper와 Empty 컨테이너로 값을 통제했다. 함수자로 값을 보호하되, 합성을 할 경우 데이터를 안전하고 부수효과 없이 흘리려면 모나드가 필요하다.
+
+### 모나드와 모나드형
+
+**모나드**: 모나드 연산을 추상한 인터페이스 제공  
+**모나드형**: 모나드 인터페이스를 실제로 구현한 형식
+
+모나드형은 Wrapper, Empty와 원리는 같지만 각 모나드마다 개성이 있다. map과 fmap의 구현 로직 또한 제각각이지만 모나드형은 다음 인터페이스를 준수해야 한다.
+
+1. 형식 생성자
+   - `new Wrapper(value)`와 같이 모나드형을 생성한다.
+2. 단위 함수
+   - 어떤 형식의 값을 모나드에 삽입한다. `wrap(value)`과 비슷하나 모나드에서는 `of(value)`로 표현한다.
+3. 바인드 함수
+   - 연산을 서로 체이닝한다. 함수자의 `fmap()`에 해당하며 `flatMap()`으로도 표현한다.
+
+4. 조인 연산
+   - 모나드 자료구조의 계층을 눌러 펴는 연산으로, 모나드의 중첩을 해제한다. 모나드를 반환하는 함수를 합성할 때 중요하다.
+
+위 인터페이스를 기준으로 Wrapper를 리팩토링 해보자.
+
+```js
+class Wrapper {
+  constructor(value) {
+    this._value = value;
+  }
+
+  static of(a) {
+    return new Wrapper(a);
+  }
+
+  map(f) {
+    return Wrapper.of(f(this._value));
+  }
+
+  join() {
+    if (!(this._value instanceof Wrapper)) {
+      return this;
+    }
+
+    return this._value.join();
+  }
+
+  get() {
+    return this._value;
+  }
+
+  toString() {
+    return `Wrapper (${this._value})`;
+  }
+}
+```
+
+리팩토링한 Wrapper 클래스의 메소드를 사용해 [Wrapper가 중첩됐던 문제](/posts/functional-programming-2#모나드)를 해결할 수 있다.
+
+```js
+const findStudent = R.curry((db, id) => Wrapper.of(db.find(id)));
+const getAddress = (student) => Wrapper.of(student.map(R.prop("address")));
+
+const studentAddress = R.compose(getAddress, findStudent(DB("student1")));
+studentAddress("444-44-4444").join().get(); // 중첩구조를 flatten해서 값을 얻을 수 있다.
+```
+
+모나드는 보통 특정 목적에 맞는 연산을 보유한다. 모나드 자체는 추상적이고 실질적인 의미가 없으며, 실제 형식으로 구현되어야 빛을 발하기 때문에 실제 형식 몇가지를 살펴보자.
+
+## Maybe, Either, IO 모나드
+
+모나드는 값을 감싸기도 하지만 값이 없는 상태도 모형화 할 수 있다. 함수형 프로그래밍에서는 Maybe와 Either형으로 에러를 구상화 하여 다음과 같은 일들을 처리한다.
+
+1. 불순 코드를 격리
+2. null 체크 로직을 정리
+3. 예외를 던지지 않음
+4. 함수 합성을 지원
+5. 기본값 제공 로직을 한 곳에 모음
+
+Maybe 모나드부터 살펴보자.
+
+### Maybe 모나드
+
+Maybe는 Just와 Nothing 두 하위형으로 구성된 형식으로 null 체크 로직을 효과적으로 통합하는 것이 목적이다. `Just()`는 존재하는 값을 감싼 컨테이너고, `Nothing()`은 값이 없음을 나타내는 컨테이너다.
+
+```js
+class Maybe {
+  static just(a) {
+    return new Just(a);
+  }
+
+  static nothing() {
+    return new Nothing();
+  }
+
+  static fromNullable(a) {
+    return a != null ? Maybe.just(a) : Maybe.nothing();
+  }
+
+  static of(a) {
+    return Maybe.just(a);
+  }
+
+  get isNothing() {
+    return false;
+  }
+
+  get isJust() {
+    return false;
+  }
+}
+
+class Just extends Maybe {
+  constructor(value) {
+    super();
+    this._value = value;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  map(f) {
+    return Maybe.fromNullable(f(this._value));
+  }
+
+  getOrElse() {
+    return this._value;
+  }
+
+  filter(f) {
+    Maybe.fromNullable(f(this._value) ? this._value : null);
+  }
+
+  chain(f) {
+    return f(this._value);
+  }
+
+  toString() {
+    return `Maybe.Just(${this._value})`;
+  }
+}
+
+class Nothing extends Maybe {
+  map(f) {
+    return this;
+  }
+
+  get value() {
+    throw new TypeError("Can not extract the value of Nothing");
+  }
+
+  getOrElse(other) {
+    return other;
+  }
+
+  filter(f) {
+    return this._value;
+  }
+
+  chain(f) {
+    return this;
+  }
+
+  toString() {
+    return "Maybe.Nothing";
+  }
+}
+```
+
+Maybe는 nullable 값을 다루는 작업을 명시적으로 추상하여 개발자가 중요한 비즈니스 로직에 집중할 수 있게 도와준다. DB 쿼리, 값 검색 등 결과가 불확실한 호출을 할 때 Maybe를 사용할 수 있다.
+
+Maybe를 사용해 다음과 같이 코드를 작성할 수 있다.
+
+```js
+const safeFindObject = R.curry((db, id) => Maybe.fromNullable(db.find(id)));
+const safeFindStudent = safeFindObject(DB("student1"));
+safeFindStudent("444-44-444").map(R.prop("address")).map(console.log);
+```
+
+모나드는 값을 직접 추출하지 않고, 함수를 맵핑하는 걸 전제로 동작한다. 단 getOrElse를 통해 추출하는 것은 가능하다. 또한 아래 코드에서 `map()`연산 중 하나라도 null이면 이후 연산은 조용히 건너뛰고 `getOrElse()`로 기본값을 반환한다.
+
+```js
+const getCountry = (student) =>
+  student.map(R.prop("address")).map(R.prop("country")).getOrElse("Country does not exist");
+
+const country = R.compose(getCountry, safeFindStudent);
+console.log(country("444-44-4444"));
+```
+
+Maybe는 유용하지만, 값이 없는 상태에 대해 아무것도 주지 않는다 (`Nothing()`). 실패한 원인까지 통제하려면 Either 모나드를 사용해야한다.
+
+### Either 모나드
+
+Either 모나드는 절대로 동시에 발생하지 않는 두 값 a, b를 논리적으로 구분한 자료구조다. 하위형 Left와 Right로 구성되며, Left에는 에러 메시지 또는 예외 객체를 담고 Right에는 성공한 값을 담는다. Either는 어떤 연산이 실패할 경우 그 원인에 대한 추가 정보를 제공할 목적으로 사용한다.
+
+Either 모나드를 구현해보자.
+
+```js
+class Either {
+  constructor(value) {
+    this._value = value;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  static left(a) {
+    return new Left(a);
+  }
+  static right(a) {
+    return new Right(a);
+  }
+  static fromNullable(val) {
+    return val != null ? Either.right(val) : Either.left(val);
+  }
+
+  static of(a) {
+    return Either.right(a);
+  }
+}
+
+class Left extends Either {
+  map(_) {
+    return this;
+  }
+
+  get value() {
+    throw new TypeError("Can not extract the value of Left");
+  }
+
+  getOrElse(other) {
+    return other;
+  }
+
+  orElse(f) {
+    return f(this._value);
+  }
+
+  chain(f) {
+    return this;
+  }
+
+  getOrElseThrow(a) {
+    throw new Error(a);
+  }
+
+  filter(f) {
+    return this;
+  }
+
+  toString() {
+    return `Either.Left(${this._value})`;
+  }
+}
+
+class Right extends Either {
+  map(f) {
+    return Either.of(f(this._value));
+  }
+
+  getOrElse(other) {
+    return this._value;
+  }
+
+  orElse() {
+    return this;
+  }
+
+  chain(f) {
+    return f(this._value);
+  }
+
+  getOrElseThrow(_) {
+    return this._value;
+  }
+
+  filter(f) {
+    return Either.fromNullable(f(this._value) ? this._value : null);
+  }
+
+  toString() {
+    return `Either.Right(${this._value})`;
+  }
+}
+```
+
+Maybe와 Either 모두 쓰지 않는 연산이 있는데, 이는 인터페이스를 맞추어서 안전한 연산을 수행할 수 있도록 의도된 것이다. `safeFindObject()`에 Either를 적용해보자.
+
+```js
+const safeFindObject = R.curry((db, id) => {
+  const obj = db.find(id);
+  if (obj) {
+    return Either.right(obj);
+  }
+
+  return Either.left(`Object not found with ID: ${id}`);
+});
+
+const findStudent = safeFindObject(DB("student1"));
+const student = findStudent("444-44-4444").getOrElse("Not found");
+console.log(student);
+```
+
+Maybe와 다르게 Either는 `Either.left()`를 활용하여 에러 메세지도 제어할 수 있다. `orElse()`를 통해 이 값을 제어한다.
+
+```js
+const errorLogger = _.partial(logger, "console", "basic", "error");
+findStudent("444-44-4444").orElse(errorLogger);
+```
+
+URI 디코딩을 예시로도 Either 모나드를 적용해보자.
+
+```js
+const decode = (url) => {
+  try {
+    return Either.right(decodeURIComponent(url));
+  } catch (e) {
+    return Either.left(e);
+  }
+};
+
+const getProtocol = (url) => url.slice(0, url.indexOf("://"));
+
+console.log(decode("https%3A%2F%2Fwww.google.com").map(getProtocol).toString()); // Either.Right(https)
+console.log(decode("%").map(getProtocol).toString()); // Either.Left(URIError: URI malformed)
+```
+
+Either, Maybe 모나드까지 구현해봤다. 실제 프로그래밍을 할 때는 외부세계와 상호작용해야 하는 경우가 많은데, 이때 IO 모나드를 사용하면 부수효과를 격리할 수 있다.
+
+### IO 모나드
+
+외부 세계와 상호작용하는 과정에서 부수효과를 완전히 막을 수는 없지만 IO 모나드를 사용하면 부수효과를 격리할 수 있다.
+
+```js
+class IO {
+  constructor(effect) {
+    if (!_.isFunction(effect)) {
+      throw "IO Usage: function required";
+    }
+    this.effect = effect;
+  }
+
+  static of(a) {
+    return new IO(() => a);
+  }
+
+  static from(fn) {
+    return new IO(fn);
+  }
+
+  map(fn) {
+    let self = this;
+    return new IO(() => fn(self.effect()));
+  }
+
+  chain(fn) {
+    return fn(this.effect());
+  }
+
+  run() {
+    return this.effect();
+  }
+}
+```
+
+아래 연산은 run()을 호출하기 전까지는 부수효과가 실행이 지연된다.
+
+```js
+const read = function (document, id) {
+  return function () {
+    return document.querySelector(`${id}`).innerHTML;
+  };
+};
+
+const write = function (document, id) {
+  return function (val) {
+    return (document.querySelector(`${id}`).innerHTML = val);
+  };
+};
+
+const readDom = _.partial(read, document);
+const writeDom = _.partial(write, document);
+
+const changeToStartCase = IO.from(readDom("#student-name"))
+  .map(_.startCase)
+  .map(writeDom("#student-name"));
+
+changeToStartCase.run();
+```
+
+`run()`을 호출하기 전에는 IO 인스턴스 내부 값에 그치지 않으며, 불변하게 연산을 수행할 수 있다. `run()`을 호출해야만 부수효과가 발생하며, 이를 통해 부수효과를 격리할 수 있는 것이다.
+
+## 결론
+
+함수자와 모나드에 대해 알아보았다. 함수자와 모나드를 통해 예외처리까지 포함된 안전한 연산을 수행할 수 있다.
+
+함수자는 안전한 연산을 위해 값을 컨테이너로 감싸고, 함수 맵핑으로만 값에 접근하도록 허용하는 자료구조다.
+모나드는 값의 형태에 대한 규칙을 정해 값을 통제하는 자료형이다. 이로 인해 에러인 경우와 정상적인 경우 모두 개발자는 같은 인터페이스로 처리할 수 있다.
+
+모나드는 쉽게 이해하기 어려운 개념이라고 한다. 필자도 완전히 모나드를 이해하지 못했지만 모나드가 함수형 프로그래밍에서 예외를 처리하는 우아한 방법을 제공한다는 것을 알게 되었다.
+
+## 참고자료
+
+**도서**
+[함수형 자바스크립트](https://product.kyobobook.co.kr/detail/S000001810017)

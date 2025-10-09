@@ -1,0 +1,91 @@
+---
+title: How to Set Git Command Aliases
+description: Improve your Git workflow with Git Aliases
+publishedAt: "2024-08-09"
+tags:
+  - git
+  - alias
+category: programming
+lang: en
+slug: git-alias
+draft: false
+---
+
+Are you still typing long Git commands? It's time to save time with Git aliases. In this post, we will learn how to use Git aliases to streamline your workflow.
+
+Software Engineers use Git commands daily and often dislike repeating long commands. Git aliases provide a great way to reduce the number of characters you need to type. Think of them as shortcuts for Git commands.
+
+## Examples
+
+You might be familiar with the following Git commands:
+
+```bash
+git status
+git add .
+git commit -m "feat: hello world"
+git push origin main
+git log
+```
+
+With Git aliases, you can shorten these commands. For example, you can create an alias 'st' for 'status' and use it like this:
+
+```bash
+git st
+```
+
+We reduced the number of characters from 6 to 2. It's a small improvement, but it will save you time in the long run. Not enough? Let's take a look at longer commands.
+
+```bash
+git commit -m "feat: hello world"
+```
+
+Thanks to Git aliases, we can also shorten this command including the flag '-m'. Like this:
+
+```bash
+git cm "feat: hello world"
+```
+
+We now only need to type 2 characters instead of 9 (excluding 'git' and the commit message). That's close to 80% fewer characters!
+
+## How to create Git alias
+
+It's pretty simple. Just run the following command:
+
+```bash
+git config --global alias.your_alias "your command"
+```
+
+Here are some aliases I use:
+
+```
+alias.pl pull
+alias.ps push
+alias.sw switch
+alias.br branch
+alias.st status
+alias.cm commit -m
+alias.a add
+alias.df diff
+```
+
+This is just beginning. You can create your own aliases based on your needs. Remember that you can use flags and options in your alias too.
+
+You can see your aliases by running the following command:
+
+```bash
+git config --global --get-regexp alias
+```
+
+## More details
+
+You can set aliases globally or locally(per repo). Just remove '--global' option if you want to set an alias locally.
+
+```bash
+git config alias.your_alias "your command"
+```
+
+## Conclusion
+
+Git aliases are a powerful way to enhance your efficiency when using Git. By creating custom shortcuts for your most-used commands, you can streamline your workflow and save valuable time. Give it a try and see how much time you can save!
+
+Small tips: You can also use shell aliases for Git commands. And also check if your CLI tool has built in alias feature. For example I'm using GitLab CLI and it has alias feature too.

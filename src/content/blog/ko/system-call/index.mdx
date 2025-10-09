@@ -1,0 +1,213 @@
+---
+title: System Call 알아보기
+description: 운영체제의 API
+publishedAt: "2023-10-28"
+tags:
+  - system-call
+category: os
+lang: ko
+slug: system-call
+draft: false
+---
+
+import Image from "@/components/mdx/Image.astro";
+
+## Intro
+
+System call은 사용자와 프로그래머가 시스템과 상호작용할 수 있는 인터페이스이다.
+
+## System call 예시
+
+예시로 system call을 통해 한 파일에서 다른 파일로 데이터를 복사하는 프로그램을 살펴보자.
+
+1. 가장 먼저 복사할 input 파일과 output 파일의 이름을 입력받는다.
+
+   ```shell
+   $ cp input.txt output.txt
+   ```
+
+2. 프로그램은 input 파일을 **open(system call)** 하고, output 파일을 **create(system call)**, **open(system call)** 한다.
+   - 이때 읽을 파일이 없거나, 이미 output 파일이 존재하면 에러를 반환하고 종료한다.
+3. 프로그램은 input 파일에서 데이터를 **read(system call)** 하고, output 파일에 **write(system call)** 한다.
+4. 프로그램은 input 파일과 output 파일을 **close(system call)** 한다.
+
+아래 이미지는 user process가 system call을 통해 OS의 기능을 사용하는 모습이다.
+
+<Image src="/os/system-call/1.jpeg" width={729} height={555} alt="" />
+
+## API(Application Programming Interface)
+
+예시와 같이 간단한 프로그램을 실행할 때도 여러 system call을 수행한다. 그렇다면 프로그래머가 모든 system call을 직접 수행해야 할까?
+
+다행히도 복잡한 system call을 프로그래머가 사용할 수 있는 함수의 집합으로 추상화 한 API(Application Programming Interface)를 통해 system call을 처리할 수 있다.
+
+API는 마치 자판기와 비슷한데, 자판기는 사용자가 버튼을 누르면 내부적으로 여러 동작을 수행한다. 사용자는 자판기가 어떻게 동작하는지 알 필요가 없다. 자판기가 제공하는 버튼만 누르면 원하는 결과물을 얻는다.
+
+자판기(함수)에 돈(인자)을 넣고, 음료수(return 값)를 얻는다. 프로그래머는 OS의 API를 통해 system call을 수행하고, OS는 system call을 통해 프로그래머에게 output을 제공한다.
+
+API를 사용할 때 장점은, 동일 API를 사용했을 때 어떤 시스템에서도 compile, run된다는 것을 보장할 수 있고, 정교하고 다루기 어려운 system call을 추상화하여 사용자가 쉽게 사용할 수 있도록 하는 것이다.
+
+## RTE (Run Time Environment)
+
+RTE는 특정 프로그래밍 언어로 작성된 프로그램을 수행하기 위한 소프트웨어 집합이다.
+OS가 제공하는 API를 통해 system call을 수행할 수 있도록 도와주는 환경이며, 컴파일러, 인터프리터, 라이브러리 등을 포함하고 있다.
+
+RTE는 system-call interface를 제공하여 실제 system call에 대한 연결을 제공함으로써 OS와 프로그램 사이에서 중간 역할을 한다.
+
+프로그래머가 함수를 호출하면, system-call interface는 함수를 가로채서 필요한 system call을 수행하고, system call의 결과를 프로그래머에게 반환한다.
+
+### System call interface 예시
+
+Standard C library 예시를 살펴보자. `printf()`를 호출하는 C 프로그램이며, 이때 C library는 system-call interface 역할을 한다.
+
+```c
+#include <stdio.h>
+int main() {
+   printf("Hello World\n"); // OS의 write() system call을 호출한다.
+}
+```
+
+C library는 `printf()`를 만나면 OS의 `write()` system call을 호출하고, 반환 값을 caller에게 반환한다.
+
+## System call 종류
+
+System call은 크게 6가지로 구분할 수 있다.
+
+1. Process control
+2. File management
+3. Device management
+4. Information maintenance
+5. Communication
+6. Protection
+
+### Process control
+
+실행중인 프로그램은 프로세스라 부른다. Process control은 실행중인 프로세스의 종료뿐만 아니라 프로세스의 프로그램 실행과 같은 과정을 관리하는 것이다.
+
+#### 프로세스 종료
+
+프로세스 실행은 종료할 수 있어야 하는데, 정상적으로 종료되는 경우 `end()`, 비정상적으로 종료되는 경우 `abort()`이다.
+
+정상/비정상적인 상황 모두 OS는 프로세스를 종료시킨 뒤, command interpreter로 제어를 넘긴다.
+
+GUI의 경우 팝업창을 통해 사용자에게 상황을 인지시킨다.
+
+#### 프로세스의 다른 프로그램 실행
+
+**1)실행**
+
+- 프로세스가 다른 프로그램을 실행하는 경우가 있다. 예시로 크롬 이용 중 클릭으로 새 크롬 창을 여는 경우처럼 말이다.
+  - `load()`, `execute()`
+
+**2)제어**
+
+- 생성된 프로세스를 제어한다.
+  - `get_process_attributes()`, `set_process_attributes()`
+
+**3)종료**
+
+- 더 이상 필요하지 않거나 잘못된 프로세스의 경우 종료시킨다.
+  - `terminate_process()`
+
+**4)종료 대기**
+
+- 생성된 프로세스의 실행 종료를 기다린다.
+  - `wait_time()`
+
+**5)이벤트 대기**
+
+- 특정 이벤트가 발생하기를 대기한다.
+  - `wait_event()`
+
+**6)이벤트 신호 전송**
+
+- 특정 이벤트를 대기하고 있는 프로세스에게 이벤트를 전송한다.
+  - `signal_event()`
+
+**7)공유 데이터 잠금 / 해제**
+
+- 공유되고 있는 데이터의 접근을 제어한다.
+  - `acquire_lock()`, `release_lock()`
+
+#### OS별 Process control system call
+
+Windows: `CreateProcess()`, `ExitProcess()`, `WaitForSingleObject()`
+
+UNIX: `fork()`, `exit()`, `wait()`
+
+### File management
+
+파일을 관리하는 system call은 매우 직관적이다.
+
+- 생성과 삭제: `create()`, `delete()`
+- 열기, 닫기: `open()`, `close()`
+- 읽기, 쓰기: `read()`, `write()`
+- 파일 이동: `reposition()`
+
+파일 조직이 디렉토리 구조라면, 디렉토리에도 동일한 연산을 수행한다.
+
+또한 파일과 디렉토리의 속성을 다루기 위해서는 `get_file_attributes()`, `set_file_attributes()`를 사용한다.
+
+### Device management
+
+프로세스가 실행 중일 때는 다양한 자원이 필요하다. 예를 들어 메인 메모리, 디스크 드라이버, 파일 엑세스 등.
+
+자원이 동원될 수 있을 때, 프로세스는 자원을 사용할 수 있도록 허가받는다. 그리고 제어가 프로세스에게 넘어간다. 자원을 사용할 수 없으면, 프로세스는 자원을 기다려야 한다.
+
+디스크 드라이버와 같은 물리적 자원, 파일과 같은 논리적 자원은 모두 장치로 간주되며 (IO 장치와 파일이 동일한 시스템 콜을 사용), 프로세스가 이를 사용하기 위해서는 `request()`를 통해 자원을 요청하고, `release()`를 통해 자원을 반환한다.
+
+자원을 할당받았다면, `read()`, `write()`등을 통해 자원을 사용할 수 있다.
+
+### Information maintenance
+
+**1)기본 정보 관리**
+
+- 현재 시각 `time()`과 `date()`
+- 현재 시스템의 버전
+- 할당 가능한 메모리 공간 등을 관리한다.
+
+**2)디버깅 정보 관리**
+
+- 디버깅에 도움되는 정보를 제공한다.
+  - 많은 시스템이 메모리를 `dump()`하는 system call을 제공한다.
+  - 모든 명령어가 실행될 때마다 실행되는 `trap()`을 통해 쉽게 디버깅 할 수 있다.
+
+**3)프로그램 실행 시간 정보**
+
+- 특정 위치 혹은 위치 집합에서 실행된 프로그램의 시간 정보를 제공한다.
+
+**4)프로세스 정보**
+
+- PCB 등의 프로세스의 정보를 설정하고 읽는다.
+  - `get_process_attributes()`, `set_process_attributes()`
+
+### Communication
+
+프로세스 간 통신을 위해
+
+1. Message passing model
+2. Shared memory model
+
+을 사용하는데, 이때도 system call의 도움을 받는다.
+
+#### Message passing model
+
+- 메일박스를 통해 소통한다.
+- 소통하기 전, 상대 프로세스가 누구인지 알기 위해 connection을 맺고 소통을 시작한다.
+- 소통이 완료되면 커넥션을 끊는다.
+- Shared memory model에 비해 충돌이 없고, 구현이 쉽다.
+
+#### Shared memory model
+
+- 한 프로세스가 다른 프로세스가 소유 및 공유한 메모리 영역에 접근한다.
+- 공유 영역에 읽고 씀으로써 정보를 교환한다.
+- 메모리 전송 속도로 소통하기 때문에 빠르다.
+- 다만 같은 공간에 쓰지 않도록 주의해야 한다.
+
+### Protection
+
+- 자원에 대한 접근 제어 방법을 제공한다.
+- 파일이나 디스크에 대한 접근 권한을 설정한다.
+  - `set_permission()`, `get_permission()`
+- 특정 유저의 접근 권한을 관리한다.
+  - `allow_user()`, `deny_user()`

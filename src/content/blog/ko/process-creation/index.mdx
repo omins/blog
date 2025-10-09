@@ -1,0 +1,127 @@
+---
+title: "프로세스 생성, 종료하기"
+publishedAt: "2023-12-07"
+tags:
+  - process
+  - process-creation
+  - process-termination
+category: os
+lang: ko
+slug: process-creation
+draft: false
+---
+
+## Intro
+
+메모리에서 실행되고 있는 프로세스는 실행 중 새로운 프로세스를 생성하기도 한다. 이때 생성하는 프로세스는 부모 프로세스, 생성되는 프로세스는 자식 프로세스라 불린다. 자식 프로세스 또한 자식 프로세스를 생성할 수 있으며, 트리 형태로 구성된다.
+
+## Process identifier (PID)
+
+대부분의 OS에서, 프로세스를 pid로 식별한다. pid는 정수이고, 고유한 값이다. 커널에서 프로세스의 속성에 접근하기 위한 index로 사용된다.
+
+UNIX와 Linux 시스템에서는 `ps` 명령어를 통해 현재 실행 중인 프로세스 목록을 확인할 수 있다.
+
+```shell
+$ ps
+```
+
+혹은
+
+```shell
+$ ps -el
+```
+
+systemd로 표시되는 시스템 데몬은 시스템이 시동되는 동안 커널이 컴퓨터를 설정하기 위해 실행하는 첫 번째 사용자 프로세스이다. 이 프로세스는 `pid = 1`을 갖는다. 모든 프로세스는 부모 프로세스를 갖는데, systemd가 그 뿌리가 된다.
+
+macOS에서 pid 1은 [launchd](https://support.apple.com/ko-kr/guide/terminal/apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)라는 프로세스이다.
+
+## Process creation
+
+### 자원 공유
+
+자식 프로세스는 때때로 자원을 필요로 한다. CPU 시간, 메모리, 파일, I/O 장치 등의 자원을 할당받기 위해 OS로부터 직접 자원을 할당 받거나, 부모 프로세스 자원의 부분집합으로 사용이 제한된다.
+
+한 프로세스가 너무 많은 자식 프로세스를 생성하여 시스템을 과부화 시키는 것을 막기 위해 부모 자식 간 자원을 분할하여 사용하도록 한다.
+
+### 데이터 공유
+
+부모가 자식 프로세스에게 초기화 데이터를 전달하거나, OS가 자식 프로세스에게 데이터를 전달한다.
+
+### 실행
+
+부모 프로세스와 자식 프로세스는 병렬적으로 실행된다. 다만 부모 프로세스는 자식 프로세스가 종료되기 전까지 대기한다.
+
+또 자식은 부모 프로세스의 메모리를 복제하여 자식과 부모 모두 동일한 프로그램과 데이터를 가진다. 이는 프로세스 [메모리 레이아웃](/posts/process#memory-layout)의 Text와 Data 영역을 의미한다.
+
+아래 코드는 UNIX-like OS에서 자식 프로세스를 생성하는 코드이다. pid가 0이면 자식 프로세스를 의미하고, pid가 0이 아니면 부모 프로세스를 의미한다.
+
+자식 프로세스는 `fork()` 함수를 호출하여 생성하고, 부모 프로세스는 `wait()` 함수를 호출하여 자식 프로세스가 종료될 때까지 [wait 큐](/posts/process-scheduling#wait-queue)에서 대기한다.
+
+```c
+#include <sys/types.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid;
+    int status;
+
+    pid = fork();
+    if (pid < 0) {
+        fprintf(stderr, "Fork Failed");
+        return 1;
+    } else if (pid == 0) {
+        execlp("/bin/ls", "ls", NULL);
+        exit(1);
+    } else {
+        wait(&status);
+        if (WIFEXITED(status)) {
+            printf("Child Complete with exit status: %d\n", WEXITSTATUS(status));
+        } else {
+            printf("Child process didn't exit normally.\n");
+        }
+    }
+    return 0;
+}
+```
+
+자식 프로세스가 실행하는 코드에서 `execlp("/bin/ls", "ls", NULL)`는 자식 자신을 포함하는 프로그램의 메모리 이미지를 파괴하고, 새로운 프로그램을 메모리에 적재한다. 이 경우에는 자식이 자신의 주소 공간에 `/bin/ls` 프로그램을 적재한다.
+
+## Process termination
+
+- 실행을 모두 마친 후 스스로 종료
+  - 자식 프로세스는 마지막 문장을 실행하여 종료하고, `exit()` system call로 OS에 자신을 삭제 요청한다.
+  - 이때 `wait()` system call 후 대기 중이던 부모 프로세스에게 상태 값이 반환된다.
+
+- 부모에 의한 종료
+  - 부모 프로세스가 자식 프로세스를 종료시키는 경우도 있다.
+  - system call로 자식 프로세스를 종료시키며, 이때 부모는 어떤 프로세스를 종료시킬지 pid를 알고 있어야 한다.
+
+- 사용자에 의한 종료
+  - 사용자는 오작동하는 어플리케이션을 kill 할 수 있다.
+
+부모에 의해 프로세스가 종료되는 이유는 다음과 같다.
+
+1. 자식에게 할당된 자원을 초과 사용하는 경우
+2. 자식에게 할당된 task가 더 이상 필요하지 않은 경우
+3. 부모가 종료되고, OS에서 자식 프로세스의 실행을 허용하지 않는 경우
+   - 자식의 자식까지 모두 종료된다.
+
+또한 자식은 종료될 때 `exit()` system call의 인자로 상태 값을 반환해, 종료되는 이유 혹은 상황을 부모에게 알릴 수 있다.
+
+이때 OS는 자식에게 할당된 자원을 회수하지만, process table entry는 남겨둔다. 부모가 자식의 상태 값을 확인해야 하기 때문이다.
+(process table은 PCB의 배열이다.)
+
+이후 부모가 `wait()` system call을 호출하면, 자식의 상태 값을 확인할 수 있고, 이때 process table에 있는 자식의 PCB가 삭제된다.
+
+### Zombie process
+
+종료되었지만 부모가 아직 `wait()` system call을 하지 않아서 process table에 남아있는 프로세스를 zombie process라 한다.
+
+### Orphan process
+
+종료된 자식 프로세스에 대해 `wait()`을 호출하지 않고 본인의 실행을 종료하면 자식 프로세스는 orphan process가 된다.
+
+이 경우 OS마다 다르지만 UNIX 기반 OS에서는 init을, Linux에서는 systemd를 부모로 갖고, 이 프로세스가 주기적으로 `wait()` system call을 한다.

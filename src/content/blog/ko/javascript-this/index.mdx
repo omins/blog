@@ -1,0 +1,404 @@
+---
+title: 자유로운 this
+description: Javascript 'this' is not this.
+publishedAt: "2023-11-13"
+tags:
+  - this
+category: javascript
+lang: ko
+slug: javascript-this
+draft: false
+---
+
+import Callout from "@/components/mdx/Callout.astro";
+
+Javascript에서 this는 this가 아니다. 그게 무슨 말인가? 정확히는 우리가 기대하는 this가 아닐 수 있다. this는 엄격 모드인지 아닌지에 따라서도 그 값이 다르며, 호출시점에 동적으로 결정된다. 이를 런타임 바인딩이라고 한다.
+
+객체를 다루는 대부분의 언어에서 this는 인스턴스 자신에 대한 참조변수이다. 따라서 메소드가 참조하는 this는 항상 인스턴스 자체를 참조할 것으로 기대하고 프로그래밍하지만 Javascript에서는 다르다.
+
+이해를 돕기 위해 예시를 하나 살펴보자.
+
+아래 코드에서 someFunc()의 실행 결과는 무엇일까?
+
+```js
+const obj = {
+  name: "omin",
+  sayHi() {
+    console.log(`hello ${this.name}`);
+  },
+};
+
+function someFunc(callback) {
+  callback();
+}
+
+someFunc(obj.sayHi);
+```
+
+`hello omin`을 출력할 것으로 예상했지만 비엄격 모드에서는 `hello undifined`가 출력되고, 엄격모드에서는 `TypeError: Cannot read properties of undefined (reading 'name')`라는 에러를 출력한다.
+
+this가 정적으로 결정된다면 `hello omin`이 출력되는 것이 맞다. 하지만 Javascript에서 this는 함수 호출 시점에 참조할 객체가 동적으로 결정되기 때문에 우리가 흔히 기대하는 방식과는 다르다.
+
+this를 차근차근 파해쳐보자.
+
+## this의 값
+
+비엄격 모드에서 this는 항상 객체를 참조하며, 엄격 모드에서는 어떤 값이든 될 수 있다. 함수, 클래스, 전역 등 어떤 컨텍스트에서 등장하는지에 따라 this가 어떻게 결정되는지 살펴보자.
+
+### 함수 컨텍스트
+
+함수 내에서 this는 언어 차원에서 주어지는 인자라고 볼 수 있다. 아래 함수는 this를 명시적으로 받지 않았지만 에러가 나지 않는다.
+
+```js
+function hello() {
+  console.log(this);
+}
+
+hello();
+```
+
+선언되지 않은 변수 something을 참조하는 것과는 다르다.
+
+```js
+function hello() {
+  console.log(something); // Error
+}
+
+hello();
+```
+
+좀 더 구체적으로는 함수에서 this는 해당 함수를 호출하기 위해 접근한 객체를 참조한다.
+
+```js
+function sayHi() {
+  console.log(this.name);
+}
+
+const obj1 = {
+  name: "omin",
+};
+
+const obj2 = {
+  name: "oms",
+};
+
+obj1.sayHi = sayHi;
+obj2.sayHi = sayHi;
+
+obj1.sayHi(); // omin
+obj2.sayHi(); // oms
+```
+
+`sayHi()`는 한 번 선언되었지만 obj1과 obj2에 각각 메소드로 할당되어 호출된다. 이때 this는 `sayHi()`를 호출할 때 접근한 객체 각각을 참조한다. `sayHi()`가 변경된 것은 아닐까? 아래와 같은 비교를 통해 같은 `sayHi()` 메소드는 같은 함수를 참조하는 것을 알 수 있다.
+
+```js
+console.log(obj1.sayHi === obj2.sayHi); // true
+```
+
+심지어는 객체 내 메소드로 생성된 경우에도 this는 생성 시점이 아닌 호출 시점에 결정된다.
+
+```js
+const obj1 = {
+  name: "omin",
+  sayHi() {
+    console.log(this.name);
+  },
+};
+
+const obj2 = {
+  name: "oms",
+};
+
+obj2.sayHi = obj1.sayHi;
+obj2.sayHi(); // oms
+```
+
+이 경우도 물론 두 객체 내 메소드 `sayHi()`는 같은 함수를 참조한다.
+
+```js
+console.log(obj1.sayHi === obj2.sayHi); // true
+```
+
+만약 메소드가 접근하는 값이 원시값이라면 this는,
+
+- 엄격모드: 원시값이 된다.
+- 비엄격모드: 원시값의 래퍼 객체가 된다.
+
+어떠한 값에도 접근하지 않고 호출한다면 this는,
+
+- 엄격모드: undefined이다.
+- 비엄격모드: globalThis이다. 브라우저의 경우 window, node 환경에서는 global.
+
+```js
+// 예시 출처: mdn
+function getThisStrict() {
+  "use strict";
+  return this;
+}
+
+function getThis() {
+  return this;
+}
+// 예시일뿐 실제로 내장객체의 prototype을 변경하지는 맙시다.
+Number.prototype.getThisStrict = getThisStrict;
+Number.prototype.getThis = getThis;
+
+console.log(typeof (1).getThisStrict()); // number
+console.log(typeof (1).getThis()); // object
+console.log(getThisStrict()); // undefined
+console.log(getThis()); // window | global (globalThis)
+console.log(getThis() === globalThis); // true
+```
+
+<Callout>비엄격모드에서 this는 항상 객체이다.</Callout>
+
+#### 콜백
+
+콜백으로 함수를 넘기는 경우에도 보통 this는 undefined이고, 비엄격모드에서는 객체다. 하지만 보통의 내장 메소드에 콜백으로 넘기는 경우가 그런 것이지 항상 그런 것은 아니기에 명세와 공식 문서의 설명을 잘 참고하자.
+
+```js
+function getThisStrict() {
+  "use strict";
+  console.log(this);
+  return this;
+}
+
+function getThis() {
+  console.log(this);
+  return this;
+}
+
+["omin", "oms"].forEach(getThisStrict); // undefined, undefined
+["omin", "oms"].forEach(getThis); // global, global
+```
+
+일부 내장 메소드는 optional 인자로 this를 넘길 수 있으며, `JSON.parse()`의 reviver나 JSON.stringify()의 replacer의 경우 this 값이 undefined가 아니다.
+
+```js
+["omin", "oms"].forEach(getThisStrict, { name: "omin & oms" }); // { name: 'omin & oms' }, { name: 'omin & oms' }
+["omin", "oms"].forEach(getThis, { name: "omin & oms" }); // { name: 'omin & oms' }, { name: 'omin & oms' }
+```
+
+#### 화살표 함수
+
+화살표 함수는 자체적인 this를 가지지 않으며 렉시컬 환경에 의해 결정된다. 언어차원에서 하나의 인자로 제공되는 this가 화살표 함수에는 없으며, 함수 '선언' 시점에 this가 바인딩 된다.
+
+```js
+const globalObj = this;
+const hello = () => this;
+console.log(globalObj === hello()); // true
+```
+
+아래 코드에서 getThisGetter는 this를 리턴하는 화살표 함수를 리턴한다. 이를 각각 obj1과 obj2의 메소드로 할당한 뒤, getter 호출 결과를 비교해보자.
+
+```js
+"use strict";
+
+function getThisGetter() {
+  return () => this;
+}
+
+const obj1 = {
+  name: "omin",
+};
+
+const obj2 = {
+  name: "oms",
+};
+
+obj1.getThisGetter = getThisGetter;
+obj2.getThisGetter = getThisGetter;
+
+const getter1 = obj1.getThisGetter();
+const getter2 = obj2.getThisGetter();
+
+console.log(getter1() === obj1); // true
+console.log(getter2() === obj2); // true
+console.log(getThisGetter()()); // undefinded
+```
+
+getter1의 호출 결과는 obj1과 같다. getter2의 호출 결과는 obj2와 같다.
+
+이는 `getThisGetter()`의 호출 시점(getter 입장에선 선언 시점)에 각각 obj1과 obj2가 this로 바인딩 되었고, 화살표 함수가 외부 렉시컬 환경의 this를 바인딩하기 때문이다.
+
+반면 getThisGetter()의 리턴 결과를 독립적으로 호출한 경우 바인딩 된 this가 전역 this이기 때문에 undefined를 반환한다.
+
+또 화살표 함수는 [`call()`](#call), [`apply()`](#apply), [`bind()`](#bind)를 사용해 이후 호출 시점에 this를 변경하려 해도 무시한다.
+
+```js
+console.log(getter1.call(obj2) === obj2); // false
+console.log(getter2.call(obj1) === obj1); // false
+```
+
+#### 생성자 함수
+
+new 키워드와 생성자 함수를 이용해 새로운 객체를 생성하는 경우 this는 인스턴스화 된 객체가 된다. 이 객체는 암시적으로 생성, 반환된다.
+
+```js
+function Person(name, age) {
+  // this = {}; 암시적으로 빈 객체 할당
+
+  this.name = name;
+  this.age = age;
+
+  // return this; 암시적으로 this return
+}
+
+const person = new Person("omin", 100);
+console.log(person.name); // omin
+```
+
+하지만 원시값이 아닌 값을 명시적으로 반환하면 this가 해당 값으로 대체된다는 점에 주의해야 한다.
+
+```js
+function Person(name, age) {
+  // this = {}; 암시적으로 빈 객체 할당
+
+  this.name = name;
+  this.age = age;
+
+  return { name: "oms", age: 50 };
+
+  // return this; 암시적으로 this return해야 하지만 무시됨
+}
+
+const person = new Person("omin", 100);
+console.log(person.name); // oms
+```
+
+원시값을 반환하면 그 원시값은 무시되고 암시적으로 생성된 this를 반환한다.
+
+```js
+function Person(name, age) {
+  // this = {}; 암시적으로 빈 객체 할당
+
+  this.name = name;
+  this.age = age;
+
+  return "oms"; // 무시됨
+
+  // return this; 암시적으로 this return
+}
+
+const person = new Person("omin", 100);
+console.log(person.name); // omin
+```
+
+### 클래스 컨텍스트
+
+클래스의 인스턴스는 항상 new 키워드를 통해 생성된다. 이때 this의 동작 방식은 생성자 함수와 같다. this는 생성자 함수에서처럼 인스턴스화 된 객체를 참조한다. 또한 클래스 내 메소드의 this는 객체 리터럴에서와 마찬가지로 메소드를 호출하기 위해 접근한 객체이다.
+
+클래스 내에서도 정적 컨텍스트와 인스턴스 컨텍스트로 this의 값이 결정되는데, 세부적인 부분은 Class에 대해 학습하며 더 자세히 알아보도록 하자.
+
+### 전역 컨텍스트
+
+전역 컨텍스트에서 this는 어떤 런타임 환경인지에 따라 다르지만 엄격, 비엄격모드에 따른 차이는 없다.
+
+브라우저 환경에서 전역 컨텍스트의 this는 항상 globalThis, 즉 window이며, Node.js 환경에서 전역 컨텍스트의 this는 `module.exports`이다.
+
+```js
+// 브라우저 환경
+console.log(globalThis === window); // true;
+console.log(this === window); // true;
+```
+
+```js
+// Node.js 환경
+console.log(globalThis === global); // true;
+console.log(this === module.exports); // true
+console.log(this === global); // false
+```
+
+## This 지정하기
+
+[`Function.prototype.call()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call), [`Function.prototype.apply()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply), [`Function.prototype.bind()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind), [`Reflect.apply()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect/apply)를 통해 this를 지정할 수 있다.
+
+기본적인 개념을 잡고가기 위해 Function.prototype 내 메소드를 위주로 살펴보자.
+
+### call()
+
+`call()` 메소드는 this를 지정하여 함수를 호출한다. 인자로 제공하는 thisArg를 호출하는 함수의 this로 지정하며, 선택적으로 함수의 인자도 넘길 수 있다.
+
+```js
+function sayHi(greeting = "Hi") {
+  console.log(greeting + " " + this.name);
+}
+
+const obj1 = {
+  name: "omin",
+};
+
+const obj2 = {
+  name: "oms",
+};
+
+sayHi.call(obj1); // Hi omin
+sayHi.call(obj2); // Hi oms
+sayHi.call(obj1, "Hello"); // Hello omin
+sayHi.call(obj2, "Howdy"); // Howdy oms
+```
+
+### apply()
+
+`apply()`는 this를 지정하는 것은 `call()`과 같지만, 선택적으로 받는 인자가 배열 혹은 유사 배열 객체여야 한다는 점이 다르다. 유사배열 객체를 인자로 받으면 이를 destructuring 해서 함수의 인자로 전달한다.
+
+```js
+const numbers = [5, 4, 3, 2, 1];
+const maxNumber = Math.max.apply(null, numbers);
+
+console.log(maxNumber); // 5
+// same as
+console.log(Math.max(...numbers)); // 5
+```
+
+직접적으로 `call()`과 비교하면 다음과 같다.
+
+```js
+let numbers = [];
+const numbersToPush = [1, 2, 3, 4, 5];
+
+numbers.push.call(numbers, numbersToPush); // push([1, 2, 3, 4, 5])
+console.log(numbers); // [ [ 1, 2, 3, 4, 5 ] ]
+
+numbers = [];
+numbers.push.apply(numbers, numbersToPush); // push(1, 2, 3, 4, 5)
+console.log(numbers); // [ 1, 2, 3, 4, 5 ]
+```
+
+### bind()
+
+`bind()`는 this를 바인딩 한 새로운 함수를 생성한다. 한 번 바인딩된 함수의 this 값은 바뀌지 않는다.
+
+```js
+const person1 = {
+  name: "omin",
+  getName() {
+    return this.name;
+  },
+};
+
+const person2 = {
+  name: "oms",
+};
+
+const boundGetName = person1.getName.bind(person1);
+console.log(boundGetName()); // omin
+
+// 호출 주체가 person2인데도 this는 person1을 참조
+person2.getName = boundGetName;
+console.log(person2.getName()); // omin
+
+// 이미 바인딩된 함수의 this는 변하지 않음
+const reboundGetName = boundGetName.bind(person2);
+console.log(reboundGetName()); // omin
+```
+
+## 참고자료
+
+[메서드와 this](https://ko.javascript.info/object-methods)  
+[this](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this)  
+[함수 호출 방식에 의해 결정되는 this](https://poiemaweb.com/js-this)  
+[JavaScript: What is the meaning of this?](https://web.dev/articles/javascript-this)  
+[함수 바인딩](https://ko.javascript.info/bind)  
+[자바스크립트의 this는 무엇인가?](https://www.zerocho.com/category/JavaScript/post/5b0645cc7e3e36001bf676eb)  
+[new 연산자와 생성자 함수](https://ko.javascript.info/constructor-new)

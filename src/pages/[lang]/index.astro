@@ -1,0 +1,99 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { getIntroForLocale } from "@/config/introductions";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_FALLBACK_MESSAGES,
+  SUPPORTED_LOCALES,
+  type Locale,
+} from "@/config/locales";
+import { getPostsForLocale } from "@/lib/content/posts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  return SUPPORTED_LOCALES.map((locale) => ({ params: { lang: locale } }));
+}
+
+const paramsLocale = Astro.params.lang;
+const locale = SUPPORTED_LOCALES.includes(paramsLocale as Locale)
+  ? (paramsLocale as Locale)
+  : DEFAULT_LOCALE;
+
+const posts = await getPostsForLocale(locale);
+
+const intro = getIntroForLocale(locale);
+const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
+  (acc, candidate) => {
+    acc[candidate] = `/${candidate}`;
+    return acc;
+  },
+  {} as Record<Locale, string | undefined>
+);
+
+const hasPosts = posts.length > 0;
+---
+
+<BaseLayout title={intro?.heading ?? "Blog"} locale={locale} localeLinks={localeLinks}>
+  <section
+    class="border-b border-border-light bg-gradient-to-b from-surface-light/50 to-background-light px-4 py-12 transition-colors dark:border-border-dark dark:from-surface-dark/30 dark:to-background-dark sm:px-6 lg:px-8"
+  >
+    <div class="mx-auto flex max-w-4xl flex-col gap-6">
+      <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
+        {locale === "ko" ? "안녕하세요" : "Hello"}
+      </p>
+      <h1
+        class="text-4xl font-semibold tracking-tight text-text-light dark:text-text-dark sm:text-5xl"
+      >
+        {intro?.heading ?? "Astro Blog"}
+      </h1>
+      <p class="text-lg text-slate-600 dark:text-slate-300">{intro?.subtitle}</p>
+      {
+        intro?.body && (
+          <div class="space-y-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            {intro.body.map((paragraph) => (
+              <p>{paragraph}</p>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-4xl flex-col gap-8">
+      <header class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight text-text-light dark:text-text-dark">
+            {locale === "ko" ? "최신 글" : "Latest Posts"}
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            {
+              locale === "ko"
+                ? "새로운 글은 자동으로 여기에 표시됩니다."
+                : "New stories land here as soon as they are added."
+            }
+          </p>
+        </div>
+        <a class="text-sm font-medium text-accent hover:underline" href={`/${locale}/posts`}>
+          {locale === "ko" ? "전체 보기" : "View all"}
+        </a>
+      </header>
+
+      {
+        hasPosts ? (
+          <div class="grid gap-6 md:grid-cols-2">
+            {posts.slice(0, 4).map((post) => (
+              <PostCard post={post} />
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-3xl border border-dashed border-border-light bg-surface-light/50 p-8 text-center text-slate-500 dark:border-border-dark dark:bg-surface-dark/40 dark:text-slate-400">
+            <p>{LOCALE_FALLBACK_MESSAGES[locale]}</p>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

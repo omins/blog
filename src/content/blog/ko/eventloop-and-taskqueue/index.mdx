@@ -1,0 +1,289 @@
+---
+title: 이벤트 루프와 태스크 큐
+description: JS에서 비동기 작업을 처리하는 원리
+publishedAt: "2024-01-15"
+tags:
+  - event-loop
+  - task-queue
+  - microtask
+  - macrotask
+category: javascript
+lang: ko
+slug: eventloop-and-taskqueue
+draft: false
+---
+
+import Image from "@/components/mdx/Image.astro";
+import Callout from "@/components/mdx/Callout.astro";
+
+## 이벤트 루프
+
+이벤트 루프는 Javascript에서의 비동기 작업의 동시성을 관리하는 메커니즘이다. Javascript 엔진의 [실행 컨텍스트 스택](/posts/execution-context#실행-컨텍스트-스택)이 비었는지 확인하고, 비었다면 태스크 큐에 쌓인 태스크를 하나씩 꺼내 스택에 push하는 일을 담당한다. 이러한 작업을 통해 싱글 스레드인 Javascript 엔진이 비동기 작업을 동시적(concurrently)으로 처리할 수 있게 지원한다.
+
+Javascript 코드 실행은 Javascript 엔진의 실행 컨텍스트 스택을 통해 관리된다. 실행 컨텍스트 스택은 콜 스택이라고도 부르며, 이 글에서는 콜 스택이라는 용어로 통일하겠다. Javascript 엔진에는 콜 스택 외에도 객체가 저장되는 메모리 공간인 힙(heap)이 있으며, 콜 스택 내 실행 컨텍스트는 힙에 저장된 객체를 참조한다.
+
+Javascript 엔진은 단 하나의 콜 스택을 가진다. 그렇기 때문에 한 번에 하나의 실행 컨텍스트만 실행할 수 있으며, 나머지 실행 컨텍스트는 실행 중인 실행 컨텍스트가 스택에서 pop되기 전까지 대기해야 한다. 즉, Javascript 엔진은 한 번에 하나의 태스크만 처리할 수 있는 싱글 스레드 방식으로 동작한다.
+
+싱글 스레드 방식으로 동작하면 현재 실행 중인 실행 컨텍스트에 의해 메인 스레드가 blocking 될 수 있는데, 브라우저에서 Javascript가 동작하는 것을 보면 여러 작업이 병렬로 처리되는 것처럼 보인다. Javascript 엔진은 하나의 콜 스택을 갖고 싱글 스레드로 동작하지만, 브라우저의 Web APIs 등의 비동기 API를 활용하면 비동기적으로 작업을 수행할 수 있기 때문이다.
+
+비동기적으로 수행한 작업(네트워크 요청/응답, 타이머)이 완료되면 태스크 큐에 콜백이 추가 되는데, 이벤트 루프는 이 태스크를 하나씩 콜 스택으로 push하는 작업을 담당한다. 전체적인 구조를 그림으로 나타내면 아래와 같다.
+
+<Image
+  src={"/assets/blog/eventloop-and-taskqueue/ko/js/eventloop-and-taskqueue/1.png"}
+  width={650}
+  height={425}
+  alt="JS 엔진과 이벤트 루프"
+/>
+
+이벤트 루프를 이해하면 Javascript 비동기 처리와 실행 컨텍스트를 더 깊이있게 이해할 수 있다.
+
+## 태스크 큐
+
+Javascript에서 비동기 API를 사용할 때는 보통 콜백 혹은 핸들러를 통해 비동기 작업 완료 시점에 해야할 일을 정의한다. **"나중에 비동기 작업이 완료되었을 때 이 함수를 호출해줘"** 라며 함수를 전달하는 것이다. 하지만 이렇게 전달한 콜백은 비동기 작업이 완료되어도 곧바로 콜 스택에 push되어 실행되지 않고 태스크 큐에 추가된다. 비동기 콜백은 태스크 큐에서 실행을 기다린다.
+
+아래 예제를 실행하면 `Second`가 먼저, 그 다음 `First`가 출력된다. `setTimeout()`의 시간 지연이 `0ms`이어도 콜백은 바로 실행되지 않고 태스크 큐에 추가되어 실행되기를 기다린다. 이 현상은 직관적이지 않지만, 이벤트 루프와 태스크 큐를 이해하면 이 현상이 왜 발생하는지 이해할 수 있다. 자세한 건 [비동기 작업 처리 과정](/posts/eventloop-and-taskqueue#비동기-작업-처리-과정)을 다루며 알아보자.
+
+```js
+setTimeout(() => {
+  console.log("First");
+}, 0);
+
+console.log("Second");
+```
+
+태스크 큐는 FIFO(First-in-first-out)으로 처리되며, 태스크 큐에 있는 태스크들은 콜 스택에 아무 실행 컨텍스트가 없을 때 이벤트 루프에 의해 **하나씩** 콜 스택에 push된다. 그리고 모든 태스크는 완료될 때까지 선점되지 않는다. 이와 같은 [Run to completion](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Event_loop#run-to-completion) 특징 때문에 이전 태스크에서 변경된 상태를 이후 태스크에서 안정적으로 참조할 수 있다. 하지만 태스크의 소요시간이 너무 길 경우, 메인 스레드를 blocking하여 사용자의 클릭이나 스크롤에 대응하지 못하는 상황이 발생할 수 있다.
+
+태스크 큐는 매크로태스크 큐와 마이크로태스크 큐로 나뉜다. 두 큐 중에서는 마이크로태스크 큐가 실행에서의 더 높은 우선순위를 가지며, 각각 어떤 태스크가 삽입되는지 살펴보자.
+
+### 1) 매크로태스크 큐
+
+매크로태스크 큐에는 이벤트 핸들러와 `setTimeout()`, `setInterval()`등의 비동기 API로 등록된 콜백이 추가된다.
+
+### 2) 마이크로태스크 큐
+
+마이크로태스크에는 `promise.then()`, `promise.catch()`, `promise.finally()`와 같은 Promise 핸들러와 `queueMicrotask()`로 등록된 콜백, async 함수, Node.js 환경의 경우 `process.nextTick()` 등의 비동기 API로 등록된 콜백이 추가된다.
+
+## 비동기 작업 처리 과정
+
+Javascript 비동기 작업은 다음과 같은 순서로 처리된다.
+
+1. 가장 먼저 동기 코드와, 비동기 작업을 트리거하는 코드를 모두 실행한다.
+   - 이 과정도 큰 틀에서 script를 실행하는 매크로태스크로 간주할 수 있다.
+   - 백그라운드에서 비동기 작업이 완료된 비동기 API의 콜백은 태스크 큐에 삽입된다.
+2. 코드 실행이 완료되어 콜 스택이 완전히 비었을 때, 다음의 순서로 태스크를 처리한다.
+   1. 마이크로태스크 큐에 태스크가 있다면,
+      - **큐에 태스크가 남지 않을 때까지** 큐에 추가된 순서대로 **하나씩** 실행한다.
+      - 이전 태스크가 종료되어야 다음 태스크가 실행된다. (Run to completion)
+
+   2. DOM 및 스타일 변경사항을 브라우저에 render한다.
+
+   3. 매크로태스크 큐에 태스크가 있다면,
+      - 가장 먼저 큐에 추가된 매크로태스크 하나를 실행하고 다시 2-1번으로.
+
+<Callout>
+  이 과정에서 꼭 기억해야 할 것은 한 번의 매크로태스크 처리 사이클에서 `매크로태스크 >
+  마이크로태스크 > 브라우저 render`가 순차적으로 처리된다는 점, 이 모든 과정은 콜 스택이 비어있을
+  때만 시작될 수 있다는 점이다. 아래 문제를 풀어보며 더 구체적으로 살펴보자.
+</Callout>
+
+```js
+// 문제: 1 2 3 4 5가 순서대로 출력될 수 있도록 console.log(' ')를 수정해보자.
+Promise.resolve().then(() => {
+  console.log(" ");
+
+  setTimeout(() => {
+    console.log(" ");
+  }, 0);
+});
+
+setTimeout(() => {
+  console.log(" ");
+
+  Promise.resolve().then(() => {
+    console.log(" ");
+  });
+}, 0);
+
+console.log("1");
+```
+
+정답은 아래와 같다.
+
+```js
+// 정답
+Promise.resolve().then(() => {
+  console.log("2");
+
+  setTimeout(() => {
+    console.log("5");
+  }, 0);
+});
+
+setTimeout(() => {
+  console.log("3");
+
+  Promise.resolve().then(() => {
+    console.log("4");
+  });
+}, 0);
+
+console.log("1");
+```
+
+위 코드는 아래의 순서로 실행된다.
+
+1. 전역 실행 컨텍스트가 콜 스택에 추가된다.
+2. `Promise.resolve()`가 콜 스택에 추가된다. `then()` 핸들러가 마이크로태스크 큐에 추가되고, `Promise.resolve()`가 콜 스택에서 제거된다.
+3. 첫 번째 `setTimeout()`이 콜 스택에 추가된다. 타이머가 시작되고, `setTimeout()`이 콜 스택에서 제거된다.
+   - 시간 지연이 0으로 설정되었기 때문에 `setTimeout()`의 콜백이 거의 즉시 매크로태스크 큐에 추가된다.
+4. 전역 코드의 `console.log('1')`이 실행된다. 전역 코드가 모두 실행되었기 때문에 전역 실행 컨텍스트가 콜 스택에서 제거된다.
+5. 콜 스택이 비었다. 마이크로태스크 큐에 있는 `then()` 핸들러가 콜 스택에 추가되고, `console.log('2')`가 실행된다. `setTimeout()`에 대해 3번과 동일하게 처리하고, `then()` 핸들러가 콜 스택에서 제거된다.
+6. 첫 번째 `setTimeout()`의 콜백이 콜 스택에 추가된다. `console.log('3')`이 실행된다. `Promise.resolve()`에 대해 2번과 동일하게 처리하고, 첫 번째 `setTimeout()`의 콜백이 콜 스택에서 제거된다.
+7. 두 번째 `then()` 핸들러가 콜 스택에 추가된다. `console.log('4')`가 실행되고, 두 번째 `then()` 핸들러가 콜 스택에서 제거된다.
+8. 두 번째 `setTimeout()`의 콜백이 콜 스택에 추가된다. `console.log('5')`가 실행되고, 두 번째 `setTimeout()`의 콜백이 콜 스택에서 제거된다.
+
+## 추가 예제
+
+이해를 돕기 위해 예제 몇 가지를 더 풀어보자.
+
+### 예제 1
+
+아래 코드를 실행하면 어떤 결과가 출력될까?
+
+```js
+const foo = () => {
+  console.log("Execute foo");
+  return Promise.resolve("foo");
+};
+
+async function bar() {
+  console.log("Before await");
+
+  const fooValue = await foo();
+  console.log(fooValue);
+
+  console.log("After await");
+}
+
+console.log("First");
+bar();
+console.log("Second");
+```
+
+답: `First > Before await > Execute foo > Second > foo > After await`  
+노트:
+
+- async 함수에서 await을 만나면 await 문 우측의 함수가 실행되고, 함수 전체가 suspend된 상태로 프라미스의 이행을 대기한다.
+- suspend된 함수는 microtask로 간주된다.
+  - setTimeout을 추가해보면 검증할 수 있다.
+
+    ```js
+    setTimeout(() => {
+      console.log("timeout");
+    });
+
+    // First > Before await > Execute foo > Second > foo > After await > timeout
+    ```
+
+  - macrotask인 timeout이 함수의 실행이 완료된 후 출력되었다.
+
+- await을 만나기 전까지는 async 함수도 일반 함수처럼 실행된다.
+
+### 예제 2
+
+아래 코드를 실행하면 어떤 결과가 출력될까?
+
+```js
+async function foo() {
+  console.log("foo");
+}
+
+async function bar() {
+  console.log("before bar");
+  await foo();
+  console.log("after bar");
+}
+
+setTimeout(() => {
+  console.log("before");
+  bar();
+  console.log("after");
+}, 0);
+```
+
+답: `before > before bar > foo > after > after bar`  
+노트:
+
+- 전역에서 실행할 동기 코드가 setTimeout 밖에 없었다. 태스크 큐 추가와 거의 동시에 이벤트 루프에 의해 콜 스택으로 추가되었을 것이다.
+- 이 예제에서도 `await foo()`를 통해 bar 함수를 suspend 시켰다. after가 after bar보다 먼저 출력된 것을 통해 확인할 수 있었다.
+
+### 예제 3
+
+아래 코드를 실행하면 어떤 결과가 출력될까?
+
+```js
+function foo() {
+  try {
+    setTimeout(() => {
+      throw new Error("Catch me");
+    }, 0);
+  } catch (e) {
+    console.log("catch");
+  }
+}
+
+foo();
+```
+
+답: 에러를 핸들링하지 못해 스크립트가 종료된다.  
+노트:
+
+- setTimeout을 통해 콜백은 매크로태스크 큐에 추가되었고, foo의 실행 컨텍스트는 콜 스택에서 제거된다.
+- 에러는 실행 컨텍스트 스택의 아래로 전달되는데, 콜백이 콜 스택에 추가된 시점에 콜백의 실행 컨텍스트는 가장 아래에 있는 실행 컨텍스트이기 때문에 에러를 핸들링하지 못했다.
+- 이를 핸들링 하려면 콜백 내부에서 try/catch 문으로 핸들링하는 방법도 있다.
+
+### 예제 4
+
+아래 코드를 실행하면 어떤 결과가 출력될까?
+
+```js
+async function bar() {
+  try {
+    await baz();
+  } catch (e) {
+    console.log("catch");
+  }
+}
+
+async function baz() {
+  console.log("hi");
+  throw new Error("Catch me");
+}
+
+bar();
+```
+
+답: `hi > catch`  
+노트:
+
+- await 키워드 직후의 함수에서 에러가 발생하면, 함수를 호출한 함수의 실행 컨텍스트가 아직 콜 스택에 남아있기 때문에 에러를 핸들링 할 수 있다.
+
+## 참고자료
+
+**명세**  
+[8.1.7.3 Processing model](https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model)  
+[9.5 Jobs and Host Operations to Enqueue Jobs](https://tc39.es/ecma262/#sec-jobs-and-job-queues)
+[이벤트 루프](https://developer.mozilla.org/ko/docs/Web/JavaScript/Event_loop)
+
+**책**  
+[모던 자바스크립트 Deep Dive 42장, 비동기 프로그래밍](https://product.kyobobook.co.kr/detail/S000001766445)
+
+**커뮤니티**  
+[이벤트 루프와 매크로태스크, 마이크로태스크](https://ko.javascript.info/event-loop)  
+[마이크로태스크](https://ko.javascript.info/microtask-queue)  
+[What is an event loop anyway? | Philip Roberts | JSConf EU](https://www.youtube.com/watch?app=desktop&v=8aGhZQkoFbQ)
+
+**블로그**  
+[자바스크립트와 이벤트 루프](https://meetup.nhncloud.com/posts/89)  
+[Microtask & Macrotask in Javascript](https://junhyunny.github.io/information/javascript/microtask-macrotask-in-javascript/)  
+[JavaScript Visualized: Promises & Async/Await](https://medium.com/@lydiahallie/javascript-visualized-promises-async-await-a3f1aad8a943)

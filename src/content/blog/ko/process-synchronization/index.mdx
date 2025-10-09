@@ -1,0 +1,947 @@
+---
+title: 동기화
+description: "병렬, 병행 실행에도 데이터 무결성 보장하기"
+publishedAt: "2023-12-15"
+tags:
+  - synchronization
+category: os
+lang: ko
+slug: process-synchronization
+draft: false
+---
+
+import Image from "@/components/mdx/Image.astro";
+import Callout from "@/components/mdx/Callout.astro";
+
+## Background
+
+[협력 프로세스](/posts/interprocess-communication)는 공유 메모리나 메시지 패싱 등의 방법을 통해 서로 협력하여 작업을 처리한다. 각 프로세스는 다른 프로세스에게 영향을 주기도, 반대로 다른 프로세스에게 영향을 받기도 한다. 이때 공유 데이터에 대한 동시 접근은 데이터 일관성을 침해한다는 문제가 있다. 이 글에서는 협력 프로세스가 순차적으로 실행되는 것을 보장하기 위한 다양한 메커니즘에 대해 알아볼 것이다.
+
+병렬, 병행 실행은 공유 데이터의 무결성에 영향을 준다. 예시로, 한정 버퍼를 사용하는 Producer-consumer 문제를 들여다보자.
+
+<Image
+  src={"/assets/blog/process-synchronization/ko/os/process-synchronization/1.jpg"}
+  width={650}
+  height={425}
+  alt={"Bounded buffer"}
+/>
+
+프로듀서는 버퍼가 비었을 때 다음 아이템을 생산하고, 컨슈머는 버퍼가 찼을 때 아이템을 소비한다. 이 방법으로 협력 프로세스는 메모리를 공유한다.
+
+아래 예제는 통해 프로듀서와 컨슈머가 각각 어떻게 동작하는 간단한 예제이다. 각각은 올바르게 동작할 것이지만, 문제는 병행 실행 시 발생한다.
+
+```c
+// Producer process
+while (true) {
+   while (count == BUFFER_SIZE) {
+      /* empty do nothing */
+   }
+   buffer[in] = next_produced
+   in = (in + 1) % BUFFER_SIZE;
+   count++;
+}
+
+// Consumer process
+while (true) {
+   while (count == 0) {
+      /* empty do nothing */
+   }
+   next_consumed = buffer[out];
+   out = (out + 1) % BUFFER_SIZE;
+   count--;
+}
+```
+
+`count++`과 `count--`가 동시 실행된다는 것은, 두 코드의 저수준 기계어 문장들이 임의의 순서로 섞여서 순차 실행되는 것과 동일하다. 변수를 동시에 조작했기 때문이다.
+
+count 변수가 5일때 우리가 예상하는 결과는 +1과 -1이 순차 실행되어 count 변수 5가 유지되는 상황이지만, 두 코드가 병행 실행되면 4, 5, 6 중 어느 결과가 나올지 보장하지 못한다.
+
+이러한 상황을 `race condition`이라고 하며, race condition은 의도하지 않은 결과를 초래하기 때문에 한 번에 하나의 프로세스만 데이터에 접근하도록 보장하고, 프로세스들은 동기화되어야 한다.
+
+<Callout emoji="🍚">
+  Race condition이란, 여러 프로세스가 동시에 한 데이터를 접근 혹은 변경하여 그 결과가 접근이 발생한
+  특정 순서에 의존적인 상황을 말한다.
+</Callout>
+
+## Critical Section Problem
+
+Critical Section 문제를 통해 프로세스 동기화에 대해 논의하도록 하자.
+
+N개의 프로세스의 집합으로 구성된 시스템이 있고, 각 프로세스에는 다른 프로세스와의 공유 데이터에 접근, 수정하는 코드가 있다. 이 코드 영역을 `Critical Section(임계영역)`이라고 한다. 한 프로세스가 임계영역을 실행하는 동안 다른 프로세스는 임계영역을 실행할 수 없다.
+
+임계영역 문제를 정의하고 해결하는 의의는 서로 다른 프로세스의 작업을 동기화함으로써 공유 데이터를 통해 협력할 수 있는 프로토콜을 디자인하는 것이다.
+
+구체적으로
+
+- 각 프로세스는 임계영역에 진입하기 위해 권한을 요청해야 한다.
+- 권한 요청이 이루어지는 영역은 entry section(진입영역)이라고 한다.
+- 임계영역 다음 이어지는 영역은 exit section(종료영역)이라고 한다.
+- 위 영역을 제외한 코드는 remainder section(나머지영역)이라고 한다.
+
+```c
+while (true) {
+   /* entry section */
+   {
+      /* critical section */
+   }
+   /* exit section */
+
+   /* remainder section */
+}
+```
+
+임계영역 문제의 해결책은 다음과 같은 요구사항을 만족해야 한다.
+
+1. Mutual exclusion
+   - 프로세스 Pi가 임계영역을 실행 중이면 다른 프로세스는 임계영역을 실행할 수 없다. 한 번에 하나씩 실행해야 한다.
+2. Progress
+   - 어떤 프로세스도 임계영역을 실행하고 있지 않다면, 다음 임계영역 실행을 결정하는 과정에는 제어 흐름이 나머지 영역에 있지 않은 프로세스만 참여할 수 있다.
+3. Bounded waiting
+   - 한 프로세스가 임계영역 진입을 요청했다면, 요청이 승인되는 동안 다른 프로세스들이 임계영역에 진입하는 횟수를 제한해야 한다.
+
+커널 모드 프로세스들로 인한 race condition 상황을 두 가지 살펴보자.
+
+1. 전체 열린 파일 목록을 대상으로 작업하는 경우
+   - 목록은 새 파일을 열거나 닫을 때 갱신되어야 한다.
+   - 두 프로세스가 동시에 파일을 여는 경우 한 목록에 대해 연속적으로 업데이트가 이루어지고, race condition이 발생한다.
+
+2. 프로세스 두 개가 동시에 `fork()`로 자식 프로세스를 생성하는 경우
+   - `fork()`연산은 새롭게 생성된 자식 프로세스의 PID를 반환해야 한다.
+   - 만약 커널 내 `next_available_pid`라는 변수가 다음 PID에 대한 정보를 저장하고 있고, 이 변수에 동시 접근하는 경우 race condition이 발생한다.
+
+이 외에도 커널 자료구조 중 race condition에 노출되기 쉬운 것은 메모리 할당, 프로세스 목록, 인터럽트 제어 등이 있다.
+
+OS에서는 임계영역을 다루기 위해 두 가지 방법으로 접근한다.
+
+1. 비선점 커널
+   - 커널 모드에서 실행될 때 선점되지 않는다.
+   - 하나의 프로세스만 실행되기 때문에 본질적으로 race condition에서 자유롭다.
+2. 선점 커널
+   - 공유 데이터가 race condition에 노출되지 않도록 신중히 디자인해야 한다.
+   - 특히 [SMP](/posts/cpu-scheduling-algorithm#symmetric-multiprocessing-smp) 구조에서 두 커널 모드 프로세스가 다른 CPU 코어에서 실행되는 경우 다루기 까다롭다.
+
+## Peterson's Solution
+
+Critical section 문제를 해결하는 소프트웨어 기반 솔루션이다. Peterson 솔루션에서는 임계영역과 나머지영역을 번갈아 실행하는 두 프로세스로 제한한다.
+
+### Peterson's Solution 예제
+
+두 프로세스 Pi와 Pj 데이터를 공유한다고 가정하자. 아래 예제에서 변수 `turn`은 어떤 프로세스가 임계영역에 진입하는 지 저장한다. `flag` 배열은 임계영역에 진입할 준비가 되었다는 것을 뜻한다.
+
+```c
+int turn;
+boolean flag[2];
+
+/* Pi */
+while (true) {
+   flag[i] = true;
+   turn = j;
+
+   while (flag[j] && turn == j) {
+      /* Idle */
+   }
+
+   /* critical section */
+
+   flag[i] = false;
+   /* remainder section */
+}
+
+
+/* Pj */
+while (true) {
+   flag[j] = true;
+   turn = i;
+
+   while (flag[i] && turn == i) {
+      /* Idle */
+   }
+
+   /* critical section */
+
+   flag[j] = false;
+   /* remainder section */
+}
+```
+
+이 해결책이 요구사항을 만족하는지 증명해보자.
+
+- Mutual exclusion
+  - 프로세스 Pi는 `flag[j] == false`이거나 `turn == i`이어야 임계영역에 진입한다.
+  - 만약 두 프로세스의 `flag`값이 모두 true여도, turn에는 한 프로세스에 대한 값이 들어있고, turn 값이 순서를 결정하므로 한 프로세스만 임계영역에 진입한다.
+
+  - `flag[i] == true && turn == i`인 경우 Pi가 임계영역에 있는 한 조건은 유지되고, Pj는 대기해야 한다.
+
+  - 따라서 1번 조건은 충족된다.
+
+- Progress, Bounded waiting
+  - 프로세스 Pi는 while 문에서 대기한다.
+  - Pj가 임계영역을 탈출하면서 `flag[j] = false`로 변경하면 Pi는 임계영역에 진입한다. 1회 대기 하면서 Bounded waiting이 성립된다.
+  - Pj가 임계영역을 나오면 다음 임계영역 진입은 대기중이던 Pi이다. Pj는 다시 진입하려면 `flag[j] = true`, `turn = i`로 설정해야 한다.
+  - 따라서 2, 3번 조건인 Progress와 Bounded waiting도 충족된다.
+
+### Peterson's Solution 결론
+
+Peterson's Solution은 현대 컴퓨터 구조에서 제대로 실행되는 것을 보장하지 않는다. 현대 컴퓨터 구조에서 명령어 재배치가 수행되기 때문이다. 그럼에도 Peterson's Solution은 임계영역 문제 해결을 위한 알고리즘적 설명을 제공하는 데 그 의의가 있다.
+
+만약 아래 예제 코드에서 `(*)`로 표시한 부분에 명령어 재배치가 수행된다면 어떻게 될까?
+
+```c
+
+/* Pi */
+while (true) {
+   flag[i] = true; // (*)
+   turn = j; // (*)
+
+   while (flag[j] && turn == j) {
+      /* Idle */
+   }
+
+   /* critical section */
+
+   flag[i] = false;
+   /* remainder section */
+}
+
+
+/* Pj */
+while (true) {
+   flag[j] = true; // (*)
+   turn = i; // (*)
+
+   while (flag[i] && turn == i) {
+      /* Idle */
+   }
+
+   /* critical section */
+
+   flag[j] = false;
+   /* remainder section */
+}
+```
+
+Pi의 코드에서는 `turn = j`가 먼저 실행되고, 그 다음으로 Pj의 코드에서 `turn = i, flag[j] = true`가 실행되었다고 가정하자. Pi의 코드 `flag[i] = true`는 아직 실행되지 않았다. 이 경우, Pi는 `turn == i`이므로 임계영역에 진입한다. 마찬가지로 `flag[i] == false`이기 때문에 Pj 또한 Pi의 임계영역 진입의사가 없다고 판단해 임계영역에 진입한다. 따라서 두 프로세스 모두 임계영역에 진입한다.
+
+위와 같은 이유로, mutual exclusion을 근본적으로 충족하기 위한 방법은 적절한 동기화 도구를 사용하는 것이 유일하며, 도구에는 1) 하드웨어 지원 2) 하이레벨 소프트웨어 기반 API가 있다.
+
+## Hardware Support for Synchronization
+
+동기화를 지원하기 위한 하드웨어 수준의 지원은 크게 3가지로 나뉜다.
+
+1. Memory Barriers
+2. Hardware Instructions: `test_and_set()`, `compare_and_swap()`
+3. Atomic Variables
+
+### 1) Memory Barriers
+
+Memory Barriers에 대해 논의하기 위해 Memory model에 대해 살펴보자. Memory model이란, 컴퓨터 아키텍처가 애플리케이션에게 메모리를 어떻게 제공하는가에 대한 모델이다.
+
+메모리 모델은 Strongly ordered와 Weakly ordered가 있다.
+
+- Strongly ordered
+  - 한 프로세스의 메모리 변경이 다른 모든 프로세스에게 즉각적으로 보인다.
+- Weakly ordered
+  - 한 프로세스의 메모리 변경이 다른 모든 프로세스에게 즉각적으로 보이지는 않는다.
+
+메모리 모델은 프로세서 타입에 따라 상이하기 때문에 커널 개발자는 공유 메모리를 사용하는 멀티프로세스에서 일어나는 메모리 변경에 대한 가시성에 대해 어떠한 가정도 할 수 없다.
+
+컴퓨터 아키텍처는 메모리 변경 사항을 다른 모든 프로세서에게 전파할 수 있도록 명령어를 제공함으로써 다른 프로세서에서 실행되는 스레드에서도 메모리 변경을 볼 수 있게 한다. 이러한 명령어를 memory barrier 혹은 memory fences라고 한다.
+
+memory barrier 명령어가 실행되면 load, store 연산이 다음 load, store 연산 실행 전에 완료되는 것을 시스템 차원에서 보장한다. 설령 명령어가 재배치 되더라도 이후의 명령 실행 전에 store가 완료되고, 그 결과가 모든 프로세서에게 보여진다.
+
+[Peterson's Solution 예제](#petersons-solution-예제)의 경우, `flag[i] = true; turn = j`로 초기화하는 진입영역에 memory barrier를 위치시킴으로써 명령어 재배치에 따른 오류를 방지할 수 있다.
+
+하지만 memory barrier는 저수준 연산이기 때문에 보통 커널 개발자가 mutual exclusion을 예방하기 위해 사용하며 일반적으로는 사용되지 않는다.
+
+### 2) Hardware instructions
+
+많은 현대 컴퓨터 시스템이 특별한 하드웨어 명령어를 제공한다. 대표적으로 `test_and_set()`과 `compare_and_swap()`이다. 이 명령어를 사용하면 [임계영역 문제](#critical-section-problem)를 비교적 간단히 해결할 수 있다. 이 연산은 `원자적(atomically)`으로 실행된다.
+
+#### `test_and_set()`
+
+아래 예제 코드에서 `lock` 변수의 초기값은 `false`이며, 다음과 같이 실행된다.
+
+1. 첫 프로세스는 `lock`이 `false`이기 때문에 임계영역에 진입한다.
+2. 두 번째 프로세스는 첫 프로세스와 공유하는 `lock`이 `true`이기 때문에 임계영역에 진입할 수 없다.
+
+```c
+
+/* target 값을 test하고, true로 초기화 */
+boolean test_and_set(boolean *target) {
+   boolean rv = *target;
+   *target = true; // true로 설정
+   return rv; // 원래 target 값 return
+}
+
+do {
+   while (test_and_set(&lock)) {
+      /* IDLE */
+   }
+   /* critical section */
+   lock = false;
+
+   /* remainder section */
+} while (true);
+```
+
+#### `compare_and_swap()`
+
+아래 예제 코드에서 `lock` 변수의 초기값은 0이며, 다음과 같이 실행된다.
+
+1. 첫 프로세는 `compare_and_swap(&lock, 0, 1)`이 0을 반환한다. 임계영역에 진입한다.
+2. 두 번째 프로세스는 `compare_and_swap(&lock, 0, 1)`이 1을 반환한다. 임계영역에 진입할 수 없다.
+
+```c
+int compare_and_swap(int *value, int expected, int new_value) {
+   int temp = *value;
+   if (*value == expected) {
+      *value = new_value;
+   }
+   return temp;
+}
+
+
+int lock = 0;
+while (true) {
+   while (compare_and_swap(&lock, 0, 1) != 0) {
+      /* IDLE */
+   }
+   /* critical section */
+   lock = 0;
+   /* remainder section */
+}
+```
+
+아래 예제 코드는 [임계영역 문제](#critical-section-problem)의 요구사항 3가지인 Mutual exclusion, Progress, Bounded waiting을 만족한다.
+
+```c
+while (true) {
+   waiting[i] = true;
+   key = 1;
+
+   /* 첫 프로세스만 key == 0으로 임계영역 진입 */
+   while (waiting[i] && key == 1) {
+      key = compare_and_swap(&lock, 0, 1);
+   }
+   waiting[i] = false;
+      /* critical section */
+
+   j = (i + 1) % n; // 다음 process
+   while ((j != i) && !waiting[j]) { // 진입 의사 없음
+      j = (j + 1) % n; // 다음 process 찾음
+   }
+
+   if (j == i) {
+      lock = 0; // (n-1)번 양보 후 lock을 초기화하여 임계영역 재진입
+   } else {
+      waiting[j] = false; // 진입 의사가 있는 process j가 while 조건 검사하고 조건 만족하지 않으면 임계영역 진입
+   }
+
+   /* remainder section */
+}
+```
+
+`compare_and_swap()` 명령어는 mutual exclusion을 구현하기 위해 직접 사용되기보다 임계영역 문제를 해결하기 위한 다른 도구의 재료로 사용된다. 대표적인 도구는 Atomic variable이 있다.
+
+### 3) Atomic variables
+
+Atomic variable은 정수, 불리언 등 기본 데이터 타입에 대한 원자적 연산을 제공한다. 주로 단일 변수에 대해 race condition이 발생할 때 mutual exclusion을 보장하기 위해 사용된다. 대부분의 시스템은 atomic variable을 다루기 위한 함수를 제공하는데, 이 함수는 `compare_and_swap()`기반으로 구현되는 경우가 많다.
+
+Atomic variable은 주로 동시에 실행되는 어플리케이션에 사용되지만 Counter, sequence generator와 같이 공유 데이터에 대한 단일 업데이트로 사용처가 제한되기도 한다. 또 atomic variable은 원자적인 업데이트를 가능하게 하지만 모든 상황에서의 race condition을 해결하는 것은 아니다.
+
+더 일반적으로 race condition을 해결할 수 있는 도구로는
+
+1. Mutex Lock
+2. Semaphore
+3. Monitors가 있다.
+
+하드웨어 기반 솔루션은 복잡하고, 어플리케이션 프로그래머가 접근할 수 없는 경우가 일반적이다. 따라서 OS 개발자는 임계영역 문제를 해결할 수 있는 고수준 소프트웨어 도구를 개발했다. 대표적인 도구는 다음과 같다.
+
+1. Mutex Lock
+2. Semaphore
+3. Monitors
+
+## Mutex Lock
+
+Mutex Lock은 Mutual exclusion의 단축어이며, 가장 간편한 동기화 도구로 여겨진다. 임계영역을 보호함으로써 race condition을 예방하는 데 사용된다. 프로세스는 임계영역에 진입하기 전에 lock을 `acquire()`해야 하고, 임계영역을 벗어날 때 `release()` 해야 한다. 이 연산은 원자적으로 실행된다. Mutex Lock은 `compare_and_swap()`을 이용해 구현될 수 있다.
+
+```c
+while (true) {
+   /* acquire lock */
+      /* critical section */
+   /* release lock */
+
+   /* remainder section */
+}
+
+// boolean available;
+acquire() {
+   while (!available) {
+      /* busy wait */
+   }
+   available = false;
+}
+
+release() {
+   available = true;
+}
+```
+
+### Busy waiting
+
+Busy waiting은 Mutex Lock의 단점이다. 한 프로세스가 임계영역에 있는 동안 다른 모든 프로세스는 임계영역에 진입하기 위해 계속 조건을 확인하며 while문을 반복해야 한다. 이는 CPU 사이클을 낭비하는 문제를 초래한다. 따라서 이를 해결하기 위해 waiting 중인 프로세스를 sleep 시키고, available 상태가 true가 되었을 때 awake하는 방법이 있다.
+
+### Spinlock
+
+Spinlock은 Mutex Lock의 일종이다. Lock이 가용할 때까지 프로세스가 spin한다. 임계영역의 작업이 waiting state로의 context switching과 restore 시의 context switching 수행을 합한 것보다 짧을 경우 사용할 수 있으며, 많은 OS에서 사용되는 기법이다.
+
+## Semaphore
+
+Semaphore는 Mutex Lock과 유사하지만 더 강력한 도구다. 프로세스의 작업을 동기화하기 위한 더 정교한 방법을 제공한다. Edsger Dijkstra로부터 처음 소개되었다.
+
+### `Wait()` and `Signal()`
+
+Semaphore `S`는 정수 변수로, 초기화를 제외하곤 두 원자 연산으로만 접근할 수 있다. S에 대한 모든 변경은 원자적으로 수행된다. 한 프로세스가 S를 변경하는 동안 다른 프로세스는 S를 변경할 수 없다.
+
+`wait()`
+
+- 원조는 `P()`이다. `to test`를 뜻하는 네덜란드어 proberen에서 유래되었다.
+
+`signal()`
+
+- 원조는 `V()`이다. `to increment`를 뜻하는 네덜란드어 verhogen에서 유래되었다.
+
+```c
+signal(S) {
+   S++;
+}
+
+wait(S) {
+   while (S <= 0) {
+      /* Busy wait */
+   }
+
+   S--;
+}
+
+while (true) {
+   wait(S); // --
+
+   /* critical section */
+
+   signal(S); // ++
+}
+```
+
+### Counting vs Binary semaphore
+
+Counting semaphore는 여러 도메인에 사용될 수 있으며, 유한한 수의 인스턴스로 구성된 주어진 리소스에 대한 접근을 제어하는 데 사용될 수 있다. 이때 semaphore는 가용 자원의 수로 초기화된다.
+
+- 각 프로세스는 리소스를 사용하기 전에 `wait()` 연산을 수행한다 (`S--`).
+- 리소스를 사용한 후에는 `signal()` 연산을 수행한다 (`S++`).
+- semaphore의 count가 0이면 모든 자원이 사용된 것이다.
+- count가 0보다 작거나 같으면 프로세스는 block된다.
+
+Binary semaphore는 0 혹은 1로 표현할 수 있는 값으로, Mutex Lock의 `available  = true || false`와 유사하다. Mutex Lock을 지원하지 않는 시스템에서는 Binary semaphore를 대신 사용할 수 있다.
+
+### Semaphore Implementation
+
+Mutex Lock에서 [Busy waiting](#busy-waiting) 문제를 겪는다고 설명했는데, Semaphore에서도 같은 문제가 발생한다. 따라서 `wait()`과 `signal()` 연산을 수정해서 문제를 해결해보자.
+
+`wait()`
+
+- Busy waiting에 돌입하지 않고 프로세스가 본인을 일시중지(suspend)하고 기다린다.
+  - `sleep()` 연산을 통해 프로세스를 waiting 상태로 전환한다.
+  - 프로세스가 waiting 큐로 이동한다.
+  - 제어가 CPU 스케줄러에게 넘어가고, 다른 프로세스를 스케줄 할 수 있다.
+
+`signal()`
+
+- Semaphore S를 기다리는 suspend된 프로세스는 다른 프로세스의 `signal()`연산으로 인해 재시작된다.
+  - `wakeup()` 연산을 통해 waiting 상태에 있는 프로세스를 ready 상태로 전환한다.
+  - 프로세스가 waiting 큐에서 ready 큐로 이동한다.
+
+Semaphore, wait, signal은 아래와 같의 정의할 수 있다. `wait()`을 통해 semaphore 사용을 기다리는 프로세스는 list에 추가되고, `signal()`을 통해 기다리던 프로세스를 list에서 제거하고 깨운다. list는 PCB의 리스트이다.
+
+```c
+typedef struct {
+   int value;
+   struct process *list;
+} semaphore;
+
+wait(semaphore *S) {
+   S->value--;
+
+   if (S->value < 0) {
+      // add this process to S->list;
+      sleep(); // suspend
+   }
+
+}
+
+signal(semaphore *S) {
+   S->value++;
+
+   if (S->value <= 0) {
+      // remove a process P from S->list;
+      wakeup(P); // resume
+   }
+}
+```
+
+이때 semaphore의 값이 음수가 될 수 있는데, 값이 음수이면 waiting 리스트에서 대기하는 프로세스의 수가 척도가 된다. Bounded waiting을 보장하려면 FIFO 큐를 사용할 수 있지만, 보통은 어떤 큐 전략이던 사용할 수 있다.
+
+#### Semaphore operations be executed atomically
+
+Semaphore 연산은 원자적으로 실행되어야 하며, 이를 위해 동일 semaphore에 대해 서로 다른 프로세스가 `signal()`, `wait()` 연산을 실행하지 않도록 보장해야 한다.
+
+1. 단일 프로세서 환경
+   - `signal()`, `wait()`이 수행되는 동안 interrupt를 금지해야 한다.
+   - Interrupt가 금지되면, 다른 프로세스의 명령어는 함께 실행될 수 없다.
+2. 다중코어 환경
+   - Interrupt는 모든 프로세싱 코어에서 비활성화 되어야 한다. 그렇지 않으면 다른 프로세스의 명령어가 함께 실행될 수 있다.
+   - 하지만 모든 코어에서의 Interrupt 비활성화는 어려운 작업임과 동시에 성능 저하를 발생시킬 수 있다.
+   - 따라서 SMP 시스템에서는 `compare_and_swap()`이나 spinlock과 같은 기법을 제공해야 한다.
+
+### Difference between Mutex and Semaphore
+
+- Mutex는 locking 메커니즘이다. lock과 release 연산으로 동작한다.
+- Semaphore는 signalling 메커니즘이다. wait과 signal 메소드는 프로세스가 리소스를 사용하는지, 해제하는지 보여준다.
+- Mutex Lock이 `단순 상호 배제` 방식이라면 Semaphore는 `실행 순서 동기화` 방식이다.
+- Mutex object는 여러 스레드 중 한 번에 하나의 스레드만 공유 데이터에 접근할 수 있도록 한다.
+- Semaphore는 여러 스레드가 유한한 공유 데이터가 가용할 때까지 접근할 수 있도록 한다.
+- Mutex Lock은 acquire, release가 한 프로세스에서만 실행될 수 있다.
+- Semaphore 변수는 어떤 프로세스에서든 값을 변경할 수 있지만 한 번에 하나의 프로세스만 값을 변경할 수 있다.
+
+## Monitors
+
+Timing error는 특정 실행 순서로 실행되었을 때만 나타나기 때문에 발견이 어렵다. 하지만 Mutex Lock이나 Semaphore를 사용해도 timing error는 발생할 수 있다.
+
+### Timing error in semaphore
+
+프로세스 하나라도 잘못 동작하면 문제가 발생한다.
+
+1번 상황)
+
+- 특정 프로세스에서 semaphore를 이용할 때 `wait()`와 `signal()`이 순서대로 실행되어야 하는데, 실행 순서가 변경되어 `signal()`이 먼저 호출된다면? 임계영역에 여러 프로세스가 동시에 진입할 것이다. 또 이러한 상황은 실제로 여러 프로세스가 동시에 임계영역에 진입하지 않으면 에러가 있는지 알기 어렵고, 항상 재현 가능하지도 않다.
+
+2번 상황)
+
+- 프로그램이 `signal()`을 `wait()`으로 교체했다면? 계속해서 대기만 하고, 교착상태가 될 것이다.
+
+3번 상황)
+
+- 프로세스가 `wait()`이나 `signal()` 혹은 둘 다를 생략했다면? Mutual exclusion이 침해되고, 교착상태가 될 것이다.
+
+이와 같이 Mutex Lock이나 Semaphore를 사용할 때는 여러 에러가 쉽게 발생한다. 이 에러를 해결하는 방법은, 여러 간단한 동기화 도구를 고수준 언어 구조물로 통합하는 것이다. 기반이 되는 고수준 언어 구조물이 바로 `monitor type`이다.
+
+### Monitor Usage
+
+추상화 데이터 타입 (ADT)는 특정 구현과는 독립적으로, 데이터와 이에 대한 연산을 캡슐화하는 것이다. Monitor type은 모니터 내에서 프로그래머가 정의한 상호 배제 연산의 집합을 포함하는 ADT이다.
+
+또 Monitor type은 값이 해당 유형의 인스턴스 상태를 정의하는 변수와 해당 변수에 대해 작동하는 함수 본문을 선언한다.
+
+Monitor type은 프로세스가 직접 사용할 수 없다. Monitor 내 함수는 내부에 정의된 변수와 인자를 사용하고, local 변수는 local 함수에 의해서만 읽고 쓸 수 있다. 이러한 캡슐화로 Monitor 구조는 한 번에 하나의 프로세스만 active 상태임을 보장한다.
+
+하지만 Monitor 구조는 특정 동기화 스킴에서는 효율적이지 않을 수 있기 때문에 condition 구조가 제공하는 메커니즘을 사용해야 하는데, 프로그래머가 타입이 condition인 변수를 선언해 사용함으로써 이를 달성할 수 있다.
+
+```c
+condition x, y;
+
+x.wait(); // suspend
+x.signal(); // resume
+```
+
+`x.signal()`을 호출하면 정확히 하나의 프로세스를 resume 하는데, 만약 suspend 중인 프로세스가 없다면 어떤 영향도 주지 않는다. 이는 Semaphore에서 `signal()`을 호출하는 것과 대비된다.
+
+타입이 condition인 변수 x에 대해 프로세스 P와 Q가 있다. P가 `x.signal()`을 호출했고, suspend 하고 있던 Q가 있다면? Q가 resume 된다면 P는 wait 해야 된다. 만약 P가 wait하지 않으면 모니터 내에 P, Q가 동시에 active 되기 때문이다.
+
+개념상, 두 프로세스는 실행을 이어갈 수 있다.
+
+1. Signal and wait
+   - P는 Q가 모니터를 떠날 때까지 wait 하거나, 다른 조건 y에 대해 wait한다.
+
+2. Signal and continue
+   - Q는 P가 모니터를 떠날 때까지 wait 하거나, 다른 조건 y에 대해 wait한다.
+   - P가 이미 실행중이었기 때문에 P가 계속 실행하는 것이 합리적일 것이다.
+   - P가 진행한다면, Q가 resume되는 시점에 Q가 기다리던 condition이 더 이상 만족하지 않는다.
+
+### Implementing a Monitor Using Semaphore
+
+각 모니터에 binary semaphore인 `mutex`가 선언 및 1로 초기화된다. Signal and wait 스킴이 사용될 것이다. `signal()`을 호출한 프로세스는 재개된 프로세스가 종료되거나 wait이 되기 전까지 대기한다. 이를 위해 다른 binary semaphore 변수 `next`가 선언 및 0으로 초기화된다. `signal()`을 호출하는 프로세스는 next를 이용해 suspend 할 수 있다.
+
+```c
+semaphore mutex = 1; // for 상호 배제
+semaphore next = 0; // for suspend itself
+int next_count = 0; // number of suspended process
+```
+
+함수 F는 다음과 같이 변형된다. 큐에 있던 프로세스 P가 함수 F를 실행하여 모니터에 진입하면 아래와 같이 진행되고, monitor 내 mutual exclution이 보장된다.
+
+```c
+wait(mutex); // mutex--;
+   /* Body of F */
+if (next_count > 0) { // 기다리는 프로세스 있음.
+   signal(next); // next++; Signal and wait이기 때문에 프로세스 P도 suspend
+} else {
+   signal(mutex); // mutex++; 프로세스 Q가 모니터 진입 가능
+}
+```
+
+#### condition 변수의 구현
+
+condition 변수는 다음과 같이 구현한다. 먼저 semaphore x_sem과 x condition을 기다리는 프로세스 수인 x_count를 선언하고, 둘 다 0으로 초기화한다. 위 예제에서 사용한 변수 mutex, next, next_count도 함께 사용한다.
+
+```c
+semaphore mutex = 1; // for 상호 배제
+semaphore next = 0; // for suspend itself
+semaphore x_sem = 0;
+int next_count = 0; // number of suspended process
+int x_count = 0; // number of process waiting condition x
+```
+
+`x.wait()`은 다음과 같이 구현된다.
+
+```c
+x_count++; // 기다리는 프로세스 추가
+if (next_count > 0) { // suspend process있음
+   signal(next); // ++; Q suspend됨
+} else {
+   signal(mutex); // 다른 프로세스를 위해 mutex release
+}
+
+wait(x_sem); // block until P release
+x_count--;
+```
+
+`x.signal()`은 다음과 같이 구현된다.
+
+```c
+// x_sem을 기다리던 프로세스를 깨움
+
+if (x_count > 0) { // condition x를 기다리는 프로세스 있음
+   next_count++; // wait(x_sem) 프로세스 추가
+   signal(x_sem); // Q를 위해 x_sem release
+   wait(next); // block until Q release
+   next_count--;
+}
+```
+
+위 코드의 실행 순서는 다음과 같다.
+
+1. Q가 `x.wait()` 호출
+2. `x_count++`으로 x의 대기열에 투입됨. `x_count == 1`
+3. `next_count == 0`이기 때문에 `signal(mutex)` 실행. `mutex == 2`
+4. Q는 `wait(x_sem)`으로 `x_sem`에 대해 signal 할 때까지 대기
+5. P가 `x.signal()` 실행했다고 가정
+6. `x_count > 0`이기 때문에 `next_count++`. `next_count == 1`
+7. `signal(x_sem)`으로 Q의 실행 재개. `x_sem == 1`
+8. `wait(next)`로 signal and wait.
+9. Q 실행 재개. wait 내부에서 `x_sem--`. `x_sem == 0`
+10. `x_count--`로 대기하고 있던 x를 꺼냄.
+11. P는 `wait(next)`로 여전히 대기하고 있음. x.wait()이 다시 호출되어야 재개 가능
+
+### Semaphore vs Monitor
+
+Semaphore와 Monitor의 차이는 다음과 같다.
+
+#### Semaphore
+
+- signal 시 wait로 대기중인 여러 프로세스가 반응한다.
+- `wait()`으로 해당 프로세스가 block(suspend) 될 수 있다. `--`
+- `signal()`로 다른 프로세스를 release 한다. `++`
+
+#### Monitor
+
+- signal 시 monitor 내 x에 대해 큐에서 대기중인 프로세스만 반응한다.
+- x에 대해 대기중인 프로세스가 없으면 무시된다.
+- `x.wait()`으로 해당 프로세스는 `x.signal()` 될 때까지 block(suspend) 된다.
+- `x.signal()`으로 다른 프로세스를 release 하거나 무시된다.
+
+## Liveness
+
+동기화 도구를 사용해 임계영역에 대한 접근을 제어할 때 프로세스가 막연히 기다리는 결과를 초래할 수 있다. 이는 임계영역 문제를 해결하는 해결책이 충족해야 하는 요구사항인 Mutual exclusion, Progress, Bounded waiting 중 Progress와 Bounded waiting에 위반된다.
+
+Liveness는 시스템이 프로세스의 진척도를 보장하기 위해 만족해야 하는 property의 집합이다. 무한 대기, 무한 루프 등 다양한 Liveness failure가 존재하며, 대부분 안 좋은 성능과 응답성을 초래한다. Liveness failure를 만들 수 있는 경우는 크게 두 가지다.
+
+1. Deadlock
+2. Priority Inversion
+
+### Deadlock
+
+Waiting 큐를 이용해 구현된 semaphore에서, 두 개 이상의 프로세스가 다른 한 프로세스에 의해 발생하는 이벤트를 무한히 기다리는 경우가 생길 수 있다. `signal()` 이벤트가 트리거되기를 기다리는 것이 하나의 예시이다.
+
+아래 예제에서 semaphore S와 Q는 모두 초깃값이 1이다. 만약 P0에서 `wait(S)`, P1에서 `wait(Q)`가 호출되었다면, 두 semaphore는 모두 0이 될 것이다. 이때 P0의 `wait(Q)`와 P1의 `wait(S)`는 영원히 blocking 된다. `signal(S)` 혹은 `signal(Q)`가 호출될 수 없기 때문이다.
+
+```c
+/* P0 */
+wait(S); // --
+wait(Q); // block
+
+signal(S);
+signal(Q);
+
+/* P1 */
+wait(Q); // --
+wait(S); // block
+
+signal(Q);
+signal(S);
+
+```
+
+모든 프로세스가 다른 프로세스에 의해 트리거 될 수 있는 이벤트를 기다리는 상태를 `Deadlocked 된 상태` 라고 한다. 이때 이벤트는 Mutex Lock이나 semaphore와 같은 자원의 획득 및 해제를 말한다.
+
+### Priority Inversion
+
+높은 우선순위 프로세스가 낮은 우선순위 프로세스가 접근 중인 커널 데이터에 접근하는 경우 문제가 발생할 수 있다. 커널 데이터는 lock으로 보호되기 때문에 높은 우선순위 프로세스는 대기해야 한다. 만약 낮은 우선순위 프로세스가 다른 높은 우선순위를 가진 프로세스에게 선점된다면 상황은 더 복잡해진다.
+
+세 프로세스 L, M, H가 있고, 우선순위는 `L < M < H` 순이다.
+
+H 프로세스가 L이 사용중인 semaphore S를 필요로 한다.
+
+- 보통은 H는 L이 끝날 때까지 waiting 큐에서 기다린다.
+- 갑자기 M이 실행 가능한 상태가 되어 L을 선점한다면?
+  - 순위가 더 낮은 M이 순위가 더 높은 H가 L을 기다리는 시간에 간접적으로 영향을 준다.
+  - 우선순위가 높은 H는 우선순위가 낮은 M의 실행이 끝나야 S를 사용할 수 있다. 즉, 우선순위가 높은 프로세스가 낮은 프로세스를 기다리는 `우선순위 역전`이 발생한다.
+  - H가 기다리면 M이 선점하지 못하도록 해야 한다.
+
+#### Priority inheritance protocol
+
+우선순위가 높은 프로세스가 필요로 하는 자원에 접근하는 우선순위 낮은 프로세스는 자원 사용이 끝날 때까지 높은 우선순위를 상속 받는다. 이 작업이 끝나면 원래의 우선순위로 돌아간다.
+
+위 예시에서 L이 H의 우선순위를 일시적으로 상속받아 M이 L을 선점하지 못한다. (L < M < H) L이 종료되면 우선순위는 원상복구된다. 우선순위가 더 높은 H가 다음에 실행된다.
+
+## Synhronization Problems
+
+병행 제어 관련 대표적인 문제는 다음과 같다.
+
+1. Bounded-buffer (유한 버퍼 문제)
+2. Readers and Writers (읽기 쓰기 문제)
+3. Dinning-Philosophers (식사하는 철학자들 문제)
+
+위 문제와 해결책은 새로 제안된 동기화 방법 중 대부분을 검증하는 데 사용된다. 동기화를 위해 Semaphore를 사용하여 위 문제에 대한 해결책을 살펴보자. 실제 구현 시에는 Binary semaphore 대신 Mutex Lock도 사용 가능하다.
+
+### 1) Bounded-buffer (유한 버퍼 문제)
+
+글 초반에 언급했던 Bounded-buffer 문제를 다시 살펴보자. Producer는 아이템을 생산하고, Consumer는 아이템을 소비한다.
+
+```c
+// Producer process
+while (true) {
+   while (count == BUFFER_SIZE) {
+      /* empty do nothing */
+   }
+   buffer[in] = next_produced
+   in = (in + 1) % BUFFER_SIZE;
+   count++;
+}
+
+// Consumer process
+while (true) {
+   while (count == 0) {
+      /* empty do nothing */
+   }
+   next_consumed = buffer[out];
+   out = (out + 1) % BUFFER_SIZE;
+   count--;
+}
+```
+
+Semaphore를 이용해 문제를 해결해보자. 아래와 같은 자료구조를 사용한다.
+
+```c
+typedef struct {
+   int value;
+   struct process *list;
+} semaphore;
+
+int n; // 총 버퍼 수
+semaphore mutex = 1; // Binary semaphore, Mutual exclusion 제공
+semaphore empty = n; // 빈 버퍼 수
+semaphore full = 0; // 찬 버퍼 수
+```
+
+```c
+/* Producer Process */
+while (true) {
+   /* produce an item in next produced */
+   wait(empty); // empty--;
+   wait(mutex);
+
+   /* add next produced to the buffer */
+   signal(mutex);
+   signal(full); // full++;
+}
+
+/* Consumer Process */
+while (true) {
+   wait(full); // full--;
+   wait(mutex);
+   /* remove an item from buffer to next consumed */
+   signal(mutex);
+   signal(empty); // empty++;
+   /* consume the item in next consumed */
+}
+```
+
+Producer와 consumer 코드가 대칭적임을 알 수 있다. Producer는 full 버퍼를 생산하고, Consumer는 empty 버퍼를 생산한다.
+
+### 2) Readers and Writers (읽기 쓰기 문제)
+
+읽기 쓰기 문제는 여러 동시 실행되는 프로세스에 공유되는 데이터베이스를 예시로 살펴볼 수 있다. Reader와 Writer로 프로세스의 종류를 구분할 수 있다. 어떤 프로세스는 데이터베이스를 읽을 수도 쓸 수도 있다.
+
+두 reader는 동시에 접근할 수 있다. 하지만 writer와 다른 어떤 주체는 동시 접근할 경우 문제가 생긴다. 문제가 일어나지 않도록 writer는 쓸 때 배타적으로 접근해야 한다. 이를 읽기 쓰기 문제라고 한다.
+
+#### First readers-writers problem
+
+- 가장 단순한 방법이다.
+- Writer가 공유 객체 접근 권한을 미리 받지 않았다면 reader는 기다리지 않는다.
+- Writer가 기다린다고 하여서 reader는 다른 reader를 기다리지 않는다.
+- Reader가 있을 때 reader와 writer 동시 접근 시 reader에게 우선권이 있다.
+
+#### Second readers-writers problem
+
+- Writer가 객체 접근을 기다리고 있으면 새로운 reader는 읽지 못한다.
+- Reader가 있을 때 reader와 writer 동시 접근 시 writer에게 우선권이 있다.
+- Writer가 준비되면 바로 써야 한다.
+
+위 두 해결책은 starvation을 초래한다. 첫 번째 해결책은 writer가, 두 번째 해결책은 reader가 starvation을 겪는다. 이 때문에 semaphore를 이용한 새로운 해결책이 제시되었다. First readers-writers problem에 대한 예제를 살펴보자.
+
+```c
+semaphore rw_mutex = 1; // mutual exclusion for writers
+semaphore mutex = 1; // mutual exclusion for read_count
+int read_count = 0;
+```
+
+```c
+/* Writer Process */
+while (true) {
+   wait(rw_mutex); // --
+   /* writing is performed */
+   signal(rw_mutex); // ++ N개의 readers 혹은 하나의 writer를 깨움
+}
+
+/* Reader Process */
+while (true) {
+   wait(mutex);
+   read_count++;
+
+   if (read_count == 1) { // 첫reader
+      wait(rw_mutex); // write 중이라면 대기
+   }
+   signal(mutex);
+
+   /* reading is performed */
+
+   wait(mutex);
+   read_count--;
+
+   if (read_count == 0) // last reader
+   signal(rw_mutex);
+   signal(mutex);
+}
+```
+
+Readers-writers problem은 reader-writer lock을 제공하는 것으로 일반화되었다.
+
+#### Reader-writer lock
+
+- lock을 acquire 할 때 mode를 지정해야 한다. Read인지 write인지
+- Read mode에서는 여러 프로세스가 동시에 lock을 획득할 수 있다.
+- 하짐 write mode에서는 한 번에 하나의 프로세스만 lock을 획득할 수 있다.
+
+### 3) Dinning-Philosophers (식사하는 철학자들 문제)
+
+다섯 명의 철학자가 원형 테이블에 앉아 식사를 한다. 젓가락이 한쪽이 다섯 개 놓여져 있다. 철학자가 배고파지면 젓가락을 들고 밥을 먹는데, 이때 왼쪽과 오른쪽에 있는 젓가락을 모두 잡고 식사해야 한다.
+
+`철학자 == 프로세스`, `젓가락 == 자원`.
+
+철학자는 한 번에 하나의 젓가락을 집을 수 있고, 누군가 잡고 있는 젓가락을 집을 수는 없다. 한 번 밥을 먹기 시작한 철학자는 다 먹을 때까지 젓가락을 내려놓지 않는다.
+
+식사하는 철학자 문제는 다양한 병행 제어의 한 예이다. 여러 자원을 여러 프로세스에게 deadlock과 starvation 없이 할당해야 할 필요가 있음을 나타낸다.
+
+#### Semaphore solution
+
+간단한 해결책 중 하나는 각 젓가락을 semaphore로 표현하는 것이다. 철학자는 `wait()` 연산을 통해 젓가락을 잡는다. `signal()` 연산을 통해 젓가락을 내려놓는다.
+
+```c
+while (true) {
+   wait(chopstick[i]); // 왼쪽 들기
+   wait(chopstick[(i+1) % 5]); // 오른쪽 들기
+
+   /* eat for a while */
+
+   signal( chopstick[i] ); // 왼쪽 놓기
+   signal( chopstick[(i+1) % 5] ); // 오른쪽 놓기
+
+   /* think for a while */
+}
+```
+
+하지만 위 솔루션에는 Deadlock이 발생한다는 문제가 있다. 만약 모든 철학자가 배가 고파서 왼쪽 젓가락을 동시에 들면, 한 명도 밥을 먹을 수 없고, 오른쪽 젓가락을 잡으려고 할 때 무한 대기하게 된다.
+
+Deadlock을 예방하기 위해 다음과 같은 방법이 있다.
+
+- 최대 4명만 동시에 자리에 앉는다.
+- 양쪽 젓가락이 가용할 때만 집도록 허용한다.
+- 비대칭 방법을 사용한다. 홀수 짝수.
+
+하지만 deadlock이 없다고 해도 starvation이 항상 없다는 뜻은 아니다. 위 방법을 통해 deadlock을 해결해도, starvation 문제가 발생할 가능성이 있다.
+
+#### Monitor solution
+
+Monitor를 이용한 솔루션은 식사하는 철학자 문제에 대해 deadlock에서 자유로운 솔루션이다. 이 솔루션에서는 젓가락 두 개가 가용할 때만 젓가락을 든다. 이를 위해 철학자를 아래와 같이 세 가지 상태로 구분한다.
+
+```c
+enum {THINKING, HUNGRY, EATING} state[5]
+```
+
+철학자 i는 두 이웃이 `EATING` 상태가 아닐 때 `EATING` 상태가 될 수 있다.
+
+이웃은 `(i + 4) % 5`와 `(i + 1) % 5` 위치에 있는 철학자다.
+
+또 배고프지만 원하는 젓가락을 잡을 수 없을 때 delay 하기 위해 `condition self[5]`를 선언한다. 아래는 전체 구현 예제이다.
+
+```c
+monitor DiningPhilosophers {
+   enum { THINKING, HUNGRY, EATING } state[5]; // 철학자들의 상태
+   condition self[5]; // self[i].signal(), self[i].wait()
+
+   void pickup(int i) {
+      state[i] = HUNGRY;
+      test(i); // eating or delay?
+      if (state[i] != EATING){
+         self[i].wait(); // 좌우에서 먹는 중
+      }
+   }
+
+   void putdown(int i) {
+      state[i] = THINKING;
+      test((i + 4) % 5); // 왼쪽
+      test((i + 1) % 5); // 오른쪽
+   }
+
+   void test(int i) {
+      if ((state[i] == HUNGRY) && (state[(i + 4) % 5] != EATING) && (state[(i + 1) % 5] != EATING)) {
+         state[i] = EATING; // 내가 hungry이고, 좌우에서 eating 하지 않음
+         self[i].signal();
+      }
+   }
+
+   initialization_code() {
+      for (int i=0; i<5; i++) {
+         state[i] = THINKING
+      };
+   }
+}
+
+/* 아래와 같은 순서로 사용함 */
+DiningPhilosophers.pickup(i);
+
+/* eat */
+
+DiningPhilosophers.putdown(i);
+```
+
+이 솔루션으로 이웃한 두 사람이 동시에 식사하지 않고 deadlock이 일어나지 않음을 보장할 수 있으나, 여전히 starvation은 발생 가능하다.

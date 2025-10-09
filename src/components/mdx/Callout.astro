@@ -1,0 +1,25 @@
+---
+interface Props {
+  type?: "info" | "success" | "warning" | "danger";
+  title?: string;
+}
+
+const { type = "info", title } = Astro.props;
+
+const styles: Record<Required<Props>["type"], string> = {
+  info: "border-sky-400/60 bg-sky-50 text-sky-900 dark:border-sky-400/30 dark:bg-sky-900/20 dark:text-sky-100",
+  success:
+    "border-emerald-400/60 bg-emerald-50 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-900/20 dark:text-emerald-100",
+  warning:
+    "border-amber-400/60 bg-amber-50 text-amber-900 dark:border-amber-400/30 dark:bg-amber-900/20 dark:text-amber-100",
+  danger:
+    "border-rose-400/60 bg-rose-50 text-rose-900 dark:border-rose-400/30 dark:bg-rose-900/20 dark:text-rose-100",
+};
+---
+
+<div class:list={["not-prose my-6 rounded-2xl border px-4 py-3 text-sm shadow-sm", styles[type]]}>
+  {title && <p class="mb-1 text-sm font-semibold uppercase tracking-wide">{title}</p>}
+  <div class="space-y-3">
+    <slot />
+  </div>
+</div>

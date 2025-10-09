@@ -1,0 +1,86 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
+import { loadBlogEntries } from "@/lib/content/posts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await loadBlogEntries();
+  const seen = new Set<string>();
+  const paths: { params: { lang: Locale; tag: string } }[] = [];
+
+  for (const post of entries) {
+    for (const tag of post.entry.data.tags ?? []) {
+      const key = `${post.locale}__${tag}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      paths.push({ params: { lang: post.locale, tag } });
+    }
+  }
+
+  return paths;
+}
+
+const tagParam = Astro.params.tag;
+const langParam = Astro.params.lang;
+
+if (!tagParam) {
+  return Astro.redirect("/404");
+}
+
+const locale = SUPPORTED_LOCALES.includes(langParam as Locale)
+  ? (langParam as Locale)
+  : SUPPORTED_LOCALES[0];
+
+const allPosts = await loadBlogEntries();
+const posts = allPosts.filter(
+  (post) => post.locale === locale && (post.entry.data.tags ?? []).includes(tagParam)
+);
+
+const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
+  (acc, candidate) => {
+    const hasTag = allPosts.some(
+      (post) => post.locale === candidate && (post.entry.data.tags ?? []).includes(tagParam)
+    );
+    acc[candidate] = hasTag ? `/${candidate}/tags/${tagParam}` : undefined;
+    return acc;
+  },
+  {} as Record<Locale, string | undefined>
+);
+
+const tagHeading = `#${tagParam}`;
+---
+
+<BaseLayout title={tagHeading} locale={locale} localeLinks={localeLinks}>
+  <section class="px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-5xl flex-col gap-8">
+      <header class="space-y-2">
+        <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
+          {locale === "ko" ? "태그" : "Tag"}
+        </p>
+        <h1 class="text-3xl font-semibold tracking-tight text-text-light dark:text-text-dark">
+          {tagHeading}
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          {locale === "ko" ? "이 태그로 분류된 게시글 목록입니다." : "Posts grouped by this tag."}
+        </p>
+      </header>
+
+      {
+        posts.length > 0 ? (
+          <div class="grid gap-6 md:grid-cols-2">
+            {posts.map((post) => (
+              <PostCard post={post} />
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-3xl border border-dashed border-border-light bg-surface-light/50 p-10 text-center text-slate-500 dark:border-border-dark dark:bg-surface-dark/40 dark:text-slate-400">
+            <p>{LOCALE_FALLBACK_MESSAGES[locale]}</p>
+          </div>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>

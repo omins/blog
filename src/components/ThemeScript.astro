@@ -1,0 +1,62 @@
+---
+import { THEME_STORAGE_KEY, THEME_OPTIONS, DEFAULT_THEME } from "@/lib/theme";
+---
+
+<script
+  is:inline
+  define:vars={{
+    storageKey: THEME_STORAGE_KEY,
+    themes: THEME_OPTIONS,
+    defaultTheme: DEFAULT_THEME,
+  }}
+>
+  (function () {
+    const root = document.documentElement;
+    const themeClassList = ["light", "dark"];
+
+    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const resolveSystemTheme = () => (systemQuery.matches ? "dark" : "light");
+
+    const applyTheme = (theme) => {
+      const resolved = theme === "system" ? resolveSystemTheme() : theme;
+      root.dataset.theme = theme;
+      themeClassList.forEach((value) => root.classList.remove(value));
+      root.classList.add(resolved);
+      root.style.setProperty("color-scheme", resolved);
+    };
+
+    const readStoredTheme = () => {
+      try {
+        const value = localStorage.getItem(storageKey);
+        return themes.includes(value) ? value : defaultTheme;
+      } catch (_) {
+        return defaultTheme;
+      }
+    };
+
+    const writeStoredTheme = (theme) => {
+      try {
+        localStorage.setItem(storageKey, theme);
+      } catch (_) {}
+    };
+
+    const initialTheme = readStoredTheme();
+    applyTheme(initialTheme);
+
+    window.__setPreferredTheme = (theme) => {
+      if (!themes.includes(theme)) return;
+      writeStoredTheme(theme);
+      applyTheme(theme);
+    };
+
+    window.__getPreferredTheme = () => readStoredTheme();
+
+    systemQuery.addEventListener("change", () => {
+      const activeTheme = window.__getPreferredTheme ? window.__getPreferredTheme() : defaultTheme;
+      if (activeTheme === "system") {
+        applyTheme("system");
+      }
+    });
+  })();
+</script>
