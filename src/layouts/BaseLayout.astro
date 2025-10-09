@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle.astro";
 import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
 import ThemeScript from "@/components/ThemeScript.astro";
 import { DEFAULT_LOCALE, DISPLAY_LOCALE_ORDER, type Locale } from "@/config/locales";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 interface Props {
   title?: string;
@@ -21,7 +22,7 @@ const {
 } = Astro.props as Props;
 
 const fallbackLocaleLinks = Object.fromEntries(
-  DISPLAY_LOCALE_ORDER.map((candidate) => [candidate, `/${candidate}`] as const)
+  DISPLAY_LOCALE_ORDER.map((candidate) => [candidate, getRelativeLocaleUrl(candidate)] as const)
 ) as Record<Locale, string>;
 
 const computedLocaleLinks = DISPLAY_LOCALE_ORDER.reduce<Record<Locale, string | undefined>>(
@@ -38,9 +39,9 @@ const effectiveLocaleLinks = hasProvidedLocales ? computedLocaleLinks : fallback
 const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://example.com").toString();
 
 const navLinks = [
-  { label: "Home", href: `/${locale}` },
-  { label: "Posts", href: `/${locale}/posts` },
-  { label: "Tags", href: `/${locale}/tags` },
+  { label: "Home", href: getRelativeLocaleUrl(locale) },
+  { label: "Posts", href: getRelativeLocaleUrl(locale, "posts") },
+  { label: "Tags", href: getRelativeLocaleUrl(locale, "tags") },
 ];
 
 const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.url).pathname;
@@ -66,7 +67,7 @@ const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.ur
       >
         <a
           class="text-lg font-semibold tracking-tight text-text-light dark:text-text-dark"
-          href={`/${locale}`}
+          href={getRelativeLocaleUrl(locale)}
         >
           omin.blog
         </a>

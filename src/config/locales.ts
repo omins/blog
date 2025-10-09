@@ -1,17 +1,17 @@
-export const SUPPORTED_LOCALES = ["ko", "en"] as const;
+export const SUPPORTED_LOCALES = ["en", "ko"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-export const DEFAULT_LOCALE: Locale = "ko";
+export const DEFAULT_LOCALE: Locale = "en";
 
 export const LOCALE_LABELS: Record<Locale, string> = {
-  ko: "한국어",
   en: "English",
+  ko: "한국어",
 };
 
 export const LOCALE_FALLBACK_MESSAGES: Record<Locale, string> = {
-  ko: "번역이 준비 중입니다.",
   en: "Translation coming soon.",
+  ko: "번역이 준비 중입니다.",
 };
 
 export const DISPLAY_LOCALE_ORDER: Locale[] = [...SUPPORTED_LOCALES];
