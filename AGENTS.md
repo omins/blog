@@ -28,12 +28,24 @@ with the existing workflows, localization model, and tooling.
 | `pnpm check`                    | Run Astro content + TypeScript checks                                     |
 | `pnpm lint` / `pnpm lint --fix` | ESLint validation and autofix                                             |
 | `pnpm test`                     | Vitest suite (currently minimal but keep green)                           |
+| `pnpm test:e2e`                 | Playwright end-to-end tests (builds first, runs headless)                 |
 | `pnpm build`                    | Generate static site in `dist/`                                           |
+| `pnpm preview`                  | Preview built site on `127.0.0.1:4321`                                    |
 | `pnpm content:migrate`          | Run the markdown migration script (see section 5)                         |
 | `pnpm content:report`           | Emit migration summary without writing files                              |
 
 Set `DEFAULT_LOCALE` and `SUPPORTED_LOCALES` when you need non-default values;
 otherwise the code falls back to the constants in `src/config/locales.ts`.
+
+### Testing
+
+- Playwright e2e tests live in `tests/e2e/`
+- Configuration in `playwright.config.ts` supports environment variables:
+  - `PLAYWRIGHT_HOST` (default: `127.0.0.1`)
+  - `PLAYWRIGHT_PORT` (default: `4321`)
+  - `PLAYWRIGHT_BASE_URL` (default: `http://127.0.0.1:4321`)
+- Run `pnpm exec playwright test --ui` for interactive debugging
+- Tests verify locale switching, routing, theme persistence, and navigation
 
 ## 4. Working With Content
 
