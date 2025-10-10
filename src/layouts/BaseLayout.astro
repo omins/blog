@@ -39,7 +39,7 @@ const effectiveLocaleLinks = hasProvidedLocales ? computedLocaleLinks : fallback
 const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://example.com").toString();
 
 const navLinks = [
-  { label: "Home", href: getRelativeLocaleUrl(locale) },
+  { label: "Home", href: getRelativeLocaleUrl(locale, "/") },
   { label: "Posts", href: getRelativeLocaleUrl(locale, "posts") },
   { label: "Tags", href: getRelativeLocaleUrl(locale, "tags") },
 ];
@@ -67,7 +67,7 @@ const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.ur
       >
         <a
           class="text-lg font-semibold tracking-tight text-text-light dark:text-text-dark"
-          href={getRelativeLocaleUrl(locale)}
+          href={getRelativeLocaleUrl(locale, "/")}
         >
           omin.blog
         </a>
