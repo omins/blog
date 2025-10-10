@@ -11,9 +11,9 @@ export const translationDictionaries = {
   ko,
 } as const satisfies Record<Locale, Record<string, unknown>>;
 
-const resources: ResourceMap = Object.fromEntries(
+const resources = Object.fromEntries(
   Object.entries(translationDictionaries).map(([locale, translation]) => [locale, { translation }])
-) as ResourceMap;
+) as unknown as ResourceMap;
 
 const translatorCache = new Map<Locale, Promise<TFunction>>();
 
