@@ -4,7 +4,7 @@ This repository hosts the localized Astro blog that powers `omin.blog`. Use this
 guide when working on the project with a coding agent so changes stay aligned
 with the existing workflows, localization model, and tooling.
 
-## 1. Repository Snapshot
+## Repository Snapshot
 
 - Astro 5 + MDX site with Tailwind theming, dark/light toggle, and locale-aware routing
 - Blog content lives under `src/content/blog/<locale>/<slug>/index.mdx`
@@ -12,7 +12,7 @@ with the existing workflows, localization model, and tooling.
 - Generated output (`dist/`) and legacy assets should never be edited by hand
 - Additional process context is documented in `docs/` and `requirements/`
 
-## 2. Environment & Tooling
+## Environment & Tooling
 
 - Node `22` (`.nvmrc`) with pnpm version locked via `packageManager` field in `package.json`
 - Activate pnpm via `corepack enable`, then install dependencies: `pnpm install`
@@ -20,24 +20,43 @@ with the existing workflows, localization model, and tooling.
 - TypeScript path alias `@` resolves to `src/`; prefer `.ts`/`.astro` sources over plain JS
 - Tailwind tokens are defined in `tailwind.config.ts`; global styles live in `src/styles/global.css`
 
-## 3. Development Workflow
+## Development Workflow
 
-| Command                         | Purpose                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------- |
-| `pnpm dev`                      | Start Astro dev server (wrap with `timeout` in automation to avoid hangs) |
-| `pnpm check`                    | Run Astro content + TypeScript checks                                     |
-| `pnpm lint` / `pnpm lint --fix` | ESLint validation and autofix                                             |
-| `pnpm test`                     | Vitest suite (currently minimal but keep green)                           |
-| `pnpm test:e2e`                 | Playwright end-to-end tests (builds first, runs headless)                 |
-| `pnpm build`                    | Generate static site in `dist/`                                           |
-| `pnpm preview`                  | Preview built site on `127.0.0.1:4321`                                    |
-| `pnpm content:migrate`          | Run the markdown migration script (see section 5)                         |
-| `pnpm content:report`           | Emit migration summary without writing files                              |
+| Command             | Purpose                                                                   |
+| ------------------- | ------------------------------------------------------------------------- |
+| `pnpm dev`          | Start Astro dev server (wrap with `timeout` in automation to avoid hangs) |
+| `pnpm check`        | Run Astro content + TypeScript checks                                     |
+| `pnpm lint`         | ESLint validation                                                         |
+| `pnpm lint:fix`     | ESLint validation with autofix                                            |
+| `pnpm format`       | Format all files with Prettier                                            |
+| `pnpm format:check` | Check formatting without writing changes                                  |
+| `pnpm test:e2e`     | Playwright end-to-end tests (builds first, runs headless)                 |
+| `pnpm build`        | Generate static site in `dist/`                                           |
+| `pnpm preview`      | Preview built site on `127.0.0.1:4321`                                    |
 
 Set `DEFAULT_LOCALE` and `SUPPORTED_LOCALES` when you need non-default values;
 otherwise the code falls back to the constants in `src/config/locales.ts`.
 
-### Testing
+## Code Quality & Formatting
+
+### Linting
+
+- ESLint configuration: `eslint.config.js`
+- Uses flat config with TypeScript, Astro, and JSX a11y plugins
+- Run `pnpm lint` to check for issues
+- Run `pnpm lint:fix` to automatically fix issues
+- Key rules: TypeScript strict mode, unused vars detection, a11y checks
+
+### Formatting
+
+- Prettier configuration: `.prettierrc`
+- Plugins: `prettier-plugin-astro`, `prettier-plugin-tailwindcss`
+- Settings: 2-space tabs, 100 char width, semicolons, double quotes
+- Run `pnpm format` to format all files
+- Run `pnpm format:check` to verify formatting without changes
+- **Before committing**: Always run `pnpm lint:fix` and `pnpm format`
+
+## Testing
 
 - Playwright e2e tests live in `tests/e2e/`
 - Run tests with: `pnpm run test:e2e` (builds first, then runs headless)
@@ -46,9 +65,21 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
   - `PLAYWRIGHT_PORT` (default: `4321`)
   - `PLAYWRIGHT_BASE_URL` (default: `http://127.0.0.1:4321`)
 - Tests verify locale switching, routing, theme persistence, and navigation
-- CI: GitHub Actions workflow (`.github/workflows/playwright.yml`) runs e2e tests on PRs and pushes to main/master
 
-## 4. Working With Content
+## Continuous Integration
+
+- **Workflow location**: `.github/workflows/playwright.yml`
+- **Trigger**: Pull requests and pushes to `main` branch
+- **What runs**:
+  - Sets up Node.js 22 (from `.nvmrc`)
+  - Enables Corepack and installs pnpm
+  - Installs dependencies with frozen lockfile
+  - Caches pnpm store and Playwright browsers
+  - Runs `pnpm run test:e2e` (builds + e2e tests)
+- **Timeout**: 10 minutes
+- **Browser**: Chromium only (for CI speed)
+
+## Working With Content
 
 - Posts must include the schema enforced in `src/content/config.ts` (`title`,
   `description`, `publishedAt`, `tags`, `category`, optional `hero`, etc.)
@@ -60,7 +91,7 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
 - Use `src/lib/content/posts.ts` helpers to load posts instead of re-querying
   collections manually
 
-## 5. Conventions & References
+## Conventions & References
 
 - Favor TypeScript-first changes; avoid adding JavaScript-only utilities
 - Respect localization rules in `src/lib/content/posts.ts` and
@@ -68,7 +99,7 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
 - Theme toggle (`src/components/ThemeToggle.astro` / `ThemeScript.astro`)
   expects color tokens to stay in sync with `tailwind.config.ts`
 - Check `docs/content-guide.md`, `docs/ci-guide.md`, and
-  `requirements/init.md` for deeper rationale before major edits
+  `requirements/core.md` for deeper rationale before major edits
 - If you add dependencies or tooling, keep `package.json` and `pnpm-lock.yaml`
   in sync and rerun the relevant commands from section 3
 

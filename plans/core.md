@@ -1,8 +1,12 @@
-# Astro Blog Migration Plan
+# Astro Blog Migration Plan (Completed)
 
-This plan maps the implementation of a new Astro-powered blog that fulfills the requirements in `requirements.md`. It breaks the work into phases, details the tasks inside each phase, and calls out verification steps to ensure the result meets expectations.
+This document describes the original migration plan for the Astro-powered blog. All phases have been successfully completed. For current project requirements and status, see `requirements/core.md`.
 
-## Phase 1 – Project Scaffolding & Tooling
+## Migration Status: ✅ Complete
+
+All phases outlined below have been implemented and verified.
+
+## Phase 1 – Project Scaffolding & Tooling ✅
 
 - **Create Astro workspace**
   - Scaffold a new Astro project (TypeScript template) in `astro/` adjacent to `blog-nextjs/`.
@@ -17,7 +21,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Confirm `pnpm dev` starts the Astro dev server with default page, wrapping the command in a timeout (e.g., `timeout 60s pnpm dev`) during automated checks to avoid hanging shells.
   - Ensure TypeScript compilation succeeds (`pnpm astro check` or equivalent).
 
-## Phase 2 – Base Configuration & Styling
+## Phase 2 – Base Configuration & Styling ✅
 
 - **Astro configuration**
   - Enable MDX and Tailwind integrations in `astro.config.mjs`.
@@ -34,7 +38,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Manually toggle between light, dark, and system modes to confirm the theme switch persists across reloads.
   - Lighthouse (local) performance check on the starter page to confirm no major regressions introduced by theme toggler baseline.
 
-## Phase 3 – Content Collections & Schema
+## Phase 3 – Content Collections & Schema ✅
 
 - **Define locales**
   - Create `src/config/locales.ts` exporting strongly typed locale constants (`SUPPORTED_LOCALES` = `['ko', 'en']`, `DEFAULT_LOCALE`), display labels, and helper utilities written in TypeScript.
@@ -47,7 +51,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - `pnpm astro check` to ensure schema typing works.
   - Create sample MDX files (one per locale) and verify build succeeds, ensuring collection paths resolve.
 
-## Phase 4 – Layout & Page Structure
+## Phase 4 – Layout & Page Structure ✅
 
 - **Global layout**
   - Build base layout component (`src/layouts/BaseLayout.astro`) with header, footer, navigation, locale selector, and theme toggle.
@@ -69,7 +73,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Confirm `/en` routes render only English posts and intro copy when available, without showing Korean fallbacks.
   - Cypress or Playwright smoke tests (optional) validating route responses and presence of key UI elements.
 
-## Phase 5 – Content Migration Pipeline
+## Phase 5 – Content Migration Pipeline ✅
 
 - **Migration script**
   - Create `scripts/migrate-content.ts` that reads from `../blog-nextjs/posts`.
@@ -85,7 +89,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Validate Astro build after migration (`pnpm build`).
   - Spot-check selected posts for accurate frontmatter/body parity.
 
-## Phase 6 – Localization Enhancements
+## Phase 6 – Localization Enhancements ✅
 
 - **Language switcher**
   - Show buttons/links only for locales with translations discovered at runtime; avoid empty placeholders and keep logic in TypeScript utilities.
@@ -99,7 +103,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Manual QA verifying switcher availability and fallback messaging.
   - Unit tests for date formatter and locale utilities.
 
-## Phase 7 – Documentation & Developer Experience
+## Phase 7 – Documentation & Developer Experience ✅
 
 - **Contributor docs**
   - Write `docs/content-guide.md` explaining how to add new posts, translations, frontmatter rules, and migration flow.
@@ -111,7 +115,7 @@ This plan maps the implementation of a new Astro-powered blog that fulfills the 
   - Peer review documentation for clarity.
   - Ensure local build + tests pass following documentation steps.
 
-## Phase 8 – Final QA & Deployment Prep
+## Phase 8 – Final QA & Deployment Prep ✅
 
 - **Quality audits**
   - Run Lighthouse on production build artifacts.

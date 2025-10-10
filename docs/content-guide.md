@@ -2,30 +2,63 @@
 
 ## Prerequisites
 
-- Install dependencies once with `pnpm install`
-- Ensure `DEFAULT_LOCALE` and `SUPPORTED_LOCALES` are set when running commands that rely on localization (defaults are `ko` and `ko,en`)
+- Install dependencies with `pnpm install`
+- Locale configuration is centralized in `src/config/locales.ts` and `astro.config.mjs`
+- Default locale: `en`, Supported locales: `en`, `ko`
 
 ## Adding A New Post
 
-1. Choose the locale directory under `src/content/blog/<locale>/`
-2. Create a folder matching the slug you want visitors to use
-3. Add `index.mdx` with the required frontmatter:
+1. **Create post directory**: `src/content/blog/<locale>/<slug>/`
+   - Example: `src/content/blog/en/my-new-post/`
+
+2. **Add `index.mdx`** with required frontmatter:
 
 ```mdx
 ---
-title: "Readable title"
-description: "Concise summary for cards and meta tags"
+title: "Post Title"
+description: "Brief summary for cards and meta tags"
 publishedAt: 2025-01-08
 tags:
   - topic
+  - another-topic
 category: "category-name"
-lang: "ko"
-slug: "chosen-slug"
-translatedFrom: "en/chosen-slug" # optional
-hero: "/assets/blog/chosen-slug/ko/hero.png" # optional
+lang: "en"
+slug: "my-new-post"
+translatedFrom: "ko/my-new-post" # optional, if translating
+hero: "/assets/blog/my-new-post/en/hero.png" # optional
 draft: false
 ---
+
+import Image from "@/components/mdx/Image.astro";
+import Callout from "@/components/mdx/Callout.astro";
+
+Your content here...
 ```
 
-4. Author body content using Markdown or MDX; import shared components such as `@/components/mdx/Image.astro` or `Callout.astro` at the top when used
-5. Store local images under `public/assets/blog/<slug>/<locale>/` and reference them with root-relative paths (the migration script enforces the same structure)
+3. **Add images**: Place in `public/assets/blog/<slug>/<locale>/`
+   - Reference with root-relative paths: `/assets/blog/my-new-post/en/image.png`
+
+4. **Preview locally**: Run `pnpm dev` and navigate to `/<locale>/posts/<slug>`
+
+5. **Build check**: Run `pnpm check` to validate schema compliance
+
+## Adding A Translation
+
+1. Create the same post structure in the other locale directory
+2. Use `translatedFrom` field to link translations
+3. The locale switcher will automatically show available translations
+
+## Frontmatter Schema
+
+All fields defined in `src/content/config.ts`:
+
+- `title` (required): Post title
+- `description` (required): Summary for cards/SEO
+- `publishedAt` (required): ISO date (YYYY-MM-DD)
+- `tags` (required): Array of strings
+- `category` (required): Single category string
+- `lang` (required): Locale code (`en`, `ko`)
+- `slug` (required): URL-safe identifier
+- `translatedFrom` (optional): Link to source post
+- `hero` (optional): Hero image path
+- `draft` (optional): Hide from production (default: false)
