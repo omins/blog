@@ -14,7 +14,7 @@ with the existing workflows, localization model, and tooling.
 
 ## 2. Environment & Tooling
 
-- Node `22` (`.nvmrc`) with `pnpm@10.15.1` (enable via `corepack enable`)
+- Node `22` (`.nvmrc`) with pnpm `10.x` (see `.pnpm-version`, activate via `corepack enable`)
 - Install dependencies once per checkout: `pnpm install`
 - ESLint (`eslint.config.js`) and Prettier (`.prettierrc`) govern formatting
 - TypeScript path alias `@` resolves to `src/`; prefer `.ts`/`.astro` sources over plain JS
