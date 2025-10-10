@@ -1,7 +1,6 @@
 {
   "name": "astro",
   "type": "module",
-  "packageManager": "pnpm@10.15.1",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
