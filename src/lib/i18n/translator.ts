@@ -13,7 +13,7 @@ export const translationDictionaries = {
 
 const resources: ResourceMap = Object.fromEntries(
   Object.entries(translationDictionaries).map(([locale, translation]) => [locale, { translation }])
-) as ResourceMap;
+) as unknown as ResourceMap;
 
 const translatorCache = new Map<Locale, Promise<TFunction>>();
 

@@ -91,6 +91,16 @@ otherwise the code falls back to the constants in `src/config/locales.ts`.
 - Use `src/lib/content/posts.ts` helpers to load posts instead of re-querying
   collections manually
 
+## Localization
+
+- Translation dictionaries live in `src/locales/<locale>.json`; update
+  `translationDictionaries` in `src/lib/i18n/translator.ts` whenever you add a
+  new locale.
+- The translator resources map must stay type-safe for TypeScript checks. When
+  deriving it from `Object.fromEntries`, cast through `unknown` (or build the
+  object via `SUPPORTED_LOCALES`) so the result satisfies the `ResourceMap`
+  shape before assigning it. Running `pnpm check` should remain clean.
+
 ## Conventions & References
 
 - Favor TypeScript-first changes; avoid adding JavaScript-only utilities
