@@ -39,6 +39,10 @@ const effectiveLocaleLinks = hasProvidedLocales ? computedLocaleLinks : fallback
 const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://example.com").toString();
 
 const resolveLocaleHref = (path = "") => {
+  if (!path) {
+    return getRelativeLocaleUrl(locale);
+  }
+
   const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
   return getRelativeLocaleUrl(locale, normalizedPath);
 };
