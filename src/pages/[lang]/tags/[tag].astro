@@ -3,6 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import PostCard from "@/components/PostCard.astro";
 import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
 import { loadBlogEntries } from "@/lib/content/posts";
+import { getTranslator } from "@/lib/i18n/translator";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const prerender = true;
@@ -52,6 +53,7 @@ const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>
 );
 
 const tagHeading = `#${tagParam}`;
+const t = await getTranslator(locale);
 ---
 
 <BaseLayout title={tagHeading} locale={locale} localeLinks={localeLinks}>
@@ -59,14 +61,12 @@ const tagHeading = `#${tagParam}`;
     <div class="mx-auto flex max-w-5xl flex-col gap-8">
       <header class="space-y-2">
         <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
-          {locale === "ko" ? "태그" : "Tag"}
+          {t("tagDetail.breadcrumb")}
         </p>
         <h1 class="text-3xl font-semibold tracking-tight text-text-light dark:text-text-dark">
           {tagHeading}
         </h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-          {locale === "ko" ? "이 태그로 분류된 게시글 목록입니다." : "Posts grouped by this tag."}
-        </p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">{t("tagDetail.description")}</p>
       </header>
 
       {

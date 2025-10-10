@@ -9,6 +9,7 @@ import {
   type Locale,
 } from "@/config/locales";
 import { getPostsForLocale } from "@/lib/content/posts";
+import { getTranslator } from "@/lib/i18n/translator";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const prerender = true;
@@ -25,6 +26,7 @@ const locale = SUPPORTED_LOCALES.includes(paramsLocale as Locale)
 const posts = await getPostsForLocale(locale);
 
 const intro = getIntroForLocale(locale);
+const t = await getTranslator(locale);
 const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
   (acc, candidate) => {
     acc[candidate] = getRelativeLocaleUrl(candidate);
@@ -42,7 +44,7 @@ const hasPosts = posts.length > 0;
   >
     <div class="mx-auto flex max-w-4xl flex-col gap-6">
       <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
-        {locale === "ko" ? "안녕하세요" : "Hello"}
+        {t("home.greeting")}
       </p>
       <h1
         class="text-4xl font-semibold tracking-tight text-text-light dark:text-text-dark sm:text-5xl"
@@ -67,21 +69,15 @@ const hasPosts = posts.length > 0;
       <header class="flex items-center justify-between">
         <div>
           <h2 class="text-2xl font-semibold tracking-tight text-text-light dark:text-text-dark">
-            {locale === "ko" ? "최신 글" : "Latest Posts"}
+            {t("home.latest.title")}
           </h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400">
-            {
-              locale === "ko"
-                ? "새로운 글은 자동으로 여기에 표시됩니다."
-                : "New stories land here as soon as they are added."
-            }
-          </p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">{t("home.latest.subtitle")}</p>
         </div>
         <a
           class="text-sm font-medium text-accent hover:underline"
           href={getRelativeLocaleUrl(locale, "posts")}
         >
-          {locale === "ko" ? "전체 보기" : "View all"}
+          {t("home.latest.viewAll")}
         </a>
       </header>
 

@@ -1,11 +1,23 @@
 import { test, expect } from "@playwright/test";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const enTranslations = require("../../src/locales/en.json");
+const koTranslations = require("../../src/locales/ko.json");
+
+const translations = {
+  en: enTranslations,
+  ko: koTranslations,
+} as const;
 
 test.describe("omin.blog E2E", () => {
   test("redirects root to default locale home", async ({ page }) => {
     await page.goto("/", { waitUntil: "networkidle" });
 
     await expect(page).toHaveURL(/\/en$/);
-    await expect(page.getByRole("heading", { name: /Latest Posts/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: translations.en.home.latest.title })
+    ).toBeVisible();
     await expect(page.locator("article").first()).toBeVisible();
   });
 
@@ -16,7 +28,7 @@ test.describe("omin.blog E2E", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveURL(/\/ko\/posts$/);
-    await expect(page.getByRole("heading", { name: "전체 게시글" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: translations.ko.posts.heading })).toBeVisible();
   });
 
   test("navigates to tag detail pages", async ({ page }) => {
@@ -36,15 +48,15 @@ test.describe("omin.blog E2E", () => {
     for (const locale of ["en", "ko"] as const) {
       await page.goto(`/${locale}/posts`, { waitUntil: "networkidle" });
 
-      await page.getByRole("link", { name: "Home" }).click();
+      await page.getByRole("link", { name: translations[locale].layout.nav.home }).click();
       await page.waitForLoadState("networkidle");
       await expect(page).toHaveURL(new RegExp(`/${locale}/?(?:$|[?#])`));
 
-      await page.getByRole("link", { name: "Posts" }).click();
+      await page.getByRole("link", { name: translations[locale].layout.nav.posts }).click();
       await page.waitForLoadState("networkidle");
       await expect(page).toHaveURL(new RegExp(`/${locale}/posts/?(?:$|[?#])`));
 
-      await page.getByRole("link", { name: "Tags" }).click();
+      await page.getByRole("link", { name: translations[locale].layout.nav.tags }).click();
       await page.waitForLoadState("networkidle");
       await expect(page).toHaveURL(new RegExp(`/${locale}/tags/?(?:$|[?#])`));
     }
@@ -53,7 +65,7 @@ test.describe("omin.blog E2E", () => {
   test("persists theme preference through the toggle", async ({ page }) => {
     await page.goto("/en", { waitUntil: "networkidle" });
 
-    const darkToggle = page.getByRole("button", { name: "Dark theme" });
+    const darkToggle = page.getByRole("button", { name: translations.en.themeToggle.dark });
     await darkToggle.click();
 
     await expect(darkToggle).toHaveAttribute("aria-pressed", "true");

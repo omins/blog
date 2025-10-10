@@ -4,7 +4,8 @@ import { DEFAULT_LOCALE } from "@/config/locales";
 const redirectHref = `/${DEFAULT_LOCALE}`;
 const pageTitle = "Redirecting…";
 ---
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -18,9 +19,8 @@ const pageTitle = "Redirecting…";
       <a href={redirectHref}>{redirectHref}</a>
       …
     </p>
-    <script is:inline>
-      const redirectPath = {JSON.stringify(redirectHref)};
-      const target = new URL(redirectPath, window.location.origin);
+    <script is:inline define:vars={{ redirectHref }}>
+      const target = new URL(redirectHref, window.location.origin);
       if (window.location.search) {
         target.search = window.location.search;
       }

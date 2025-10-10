@@ -1,5 +1,14 @@
 ---
+import { DEFAULT_LOCALE, type Locale } from "@/config/locales";
 import { THEME_OPTIONS } from "@/lib/theme";
+import { getTranslator } from "@/lib/i18n/translator";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props as Props;
+const t = await getTranslator(locale);
 
 const options = THEME_OPTIONS;
 ---
@@ -12,7 +21,7 @@ const options = THEME_OPTIONS;
     type="button"
     data-theme-option="light"
     class="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-300"
-    aria-label="Light theme"
+    aria-label={t("themeToggle.light")}
     aria-pressed="false"
   >
     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -27,7 +36,7 @@ const options = THEME_OPTIONS;
     type="button"
     data-theme-option="dark"
     class="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-300"
-    aria-label="Dark theme"
+    aria-label={t("themeToggle.dark")}
     aria-pressed="false"
   >
     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -42,7 +51,7 @@ const options = THEME_OPTIONS;
     type="button"
     data-theme-option="system"
     class="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-all hover:text-slate-600 dark:hover:text-slate-300"
-    aria-label="System theme"
+    aria-label={t("themeToggle.system")}
     aria-pressed="false"
   >
     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
