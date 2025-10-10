@@ -38,10 +38,15 @@ const effectiveLocaleLinks = hasProvidedLocales ? computedLocaleLinks : fallback
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://example.com").toString();
 
+const resolveLocaleHref = (path = "") => {
+  const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+  return getRelativeLocaleUrl(locale, normalizedPath);
+};
+
 const navLinks = [
-  { label: "Home", href: getRelativeLocaleUrl(locale, "/") },
-  { label: "Posts", href: getRelativeLocaleUrl(locale, "posts") },
-  { label: "Tags", href: getRelativeLocaleUrl(locale, "tags") },
+  { label: "Home", href: resolveLocaleHref() },
+  { label: "Posts", href: resolveLocaleHref("posts") },
+  { label: "Tags", href: resolveLocaleHref("tags") },
 ];
 
 const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.url).pathname;
@@ -67,7 +72,7 @@ const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.ur
       >
         <a
           class="text-lg font-semibold tracking-tight text-text-light dark:text-text-dark"
-          href={getRelativeLocaleUrl(locale, "/")}
+          href={resolveLocaleHref()}
         >
           omin.blog
         </a>
