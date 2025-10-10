@@ -9,20 +9,20 @@ on:
 jobs:
   test:
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+
+      - name: Use Node.js from .nvmrc
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
           cache: pnpm
-
-      - name: Enable pnpm via corepack
-        run: |
-          PACKAGE_MANAGER=$(node -p "require('./package.json').packageManager")
-          corepack use "$PACKAGE_MANAGER"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
