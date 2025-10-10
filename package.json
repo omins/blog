@@ -23,7 +23,8 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "fast-glob": "^3.3.3",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "i18next": "^25.5.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

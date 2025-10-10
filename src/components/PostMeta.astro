@@ -2,6 +2,7 @@
 import { formatPublishedDate } from "@/lib/datetime";
 import { getLocaleLabel, type Locale } from "@/config/locales";
 import type { NormalizedBlogEntry } from "@/lib/content/posts";
+import { getTranslator } from "@/lib/i18n/translator";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 const { post, availableLocales } = Astro.props;
 const { entry } = post;
 const tags = entry.data.tags ?? [];
+const t = await getTranslator(post.locale);
 ---
 
 <div
@@ -44,7 +46,7 @@ const tags = entry.data.tags ?? [];
     )
   }
   <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-    <span class="font-semibold uppercase tracking-widest">Available:</span>
+    <span class="font-semibold uppercase tracking-widest">{t("postMeta.available")}</span>
     {
       availableLocales.map((locale) => (
         <span

@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle.astro";
 import LocaleSwitcher from "@/components/LocaleSwitcher.astro";
 import ThemeScript from "@/components/ThemeScript.astro";
 import { DEFAULT_LOCALE, DISPLAY_LOCALE_ORDER, type Locale } from "@/config/locales";
+import { getTranslator } from "@/lib/i18n/translator";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 interface Props {
@@ -15,11 +16,17 @@ interface Props {
 }
 
 const {
-  title = "Astro Blog v2",
-  description = "Locale-aware blogging experience powered by Astro.",
-  locale = DEFAULT_LOCALE,
+  title: providedTitle,
+  description: providedDescription,
+  locale: providedLocale = DEFAULT_LOCALE,
   localeLinks = {} as Record<Locale, string | undefined>,
 } = Astro.props as Props;
+
+const locale = providedLocale ?? DEFAULT_LOCALE;
+const t = await getTranslator(locale);
+
+const title = providedTitle ?? t("layout.defaultTitle");
+const description = providedDescription ?? t("layout.defaultDescription");
 
 const fallbackLocaleLinks = Object.fromEntries(
   DISPLAY_LOCALE_ORDER.map((candidate) => [candidate, getRelativeLocaleUrl(candidate)] as const)
@@ -48,9 +55,9 @@ const resolveLocaleHref = (path = "") => {
 };
 
 const navLinks = [
-  { label: "Home", href: resolveLocaleHref() },
-  { label: "Posts", href: resolveLocaleHref("posts") },
-  { label: "Tags", href: resolveLocaleHref("tags") },
+  { label: t("layout.nav.home"), href: resolveLocaleHref() },
+  { label: t("layout.nav.posts"), href: resolveLocaleHref("posts") },
+  { label: t("layout.nav.tags"), href: resolveLocaleHref("tags") },
 ];
 
 const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.url).pathname;
@@ -110,10 +117,11 @@ const isActive = (href: string) => Astro.url.pathname === new URL(href, Astro.ur
       <div
         class="mx-auto flex max-w-5xl flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
-        <p>© {new Date().getFullYear()} omin. Crafted with Astro.</p>
+        <p>{t("layout.footer.copyright", { year: new Date().getFullYear() })}</p>
         <div class="flex items-center gap-4">
-          <a class="hover:text-accent" href="https://docs.astro.build/">Read the Astro docs</a>
-          <ThemeToggle />
+          <a class="hover:text-accent" href="https://docs.astro.build/">{t("layout.footer.docs")}</a
+          >
+          <ThemeToggle locale={locale} />
         </div>
       </div>
     </footer>

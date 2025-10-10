@@ -2,6 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
 import { getPostsForLocale } from "@/lib/content/posts";
+import { getTranslator } from "@/lib/i18n/translator";
 import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const prerender = true;
@@ -30,25 +31,20 @@ const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>
   },
   {} as Record<Locale, string | undefined>
 );
+const t = await getTranslator(locale);
 ---
 
-<BaseLayout title="Tags" locale={locale} localeLinks={localeLinks}>
+<BaseLayout title={t("tags.title")} locale={locale} localeLinks={localeLinks}>
   <section class="px-4 py-12 sm:px-6 lg:px-8">
     <div class="mx-auto flex max-w-4xl flex-col gap-8">
       <header class="space-y-3">
         <p class="text-sm uppercase tracking-widest text-accent-soft dark:text-accent">
-          {locale === "ko" ? "태그 살펴보기" : "Browse tags"}
+          {t("tags.browse")}
         </p>
         <h1 class="text-3xl font-semibold tracking-tight text-text-light dark:text-text-dark">
-          {locale === "ko" ? "주제별 게시글" : "Topics"}
+          {t("tags.title")}
         </h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-          {
-            locale === "ko"
-              ? "태그를 선택하면 해당 언어에 번역된 글만 필터링됩니다."
-              : "Choose a tag to filter posts that are available in this locale."
-          }
-        </p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">{t("tags.description")}</p>
       </header>
 
       {

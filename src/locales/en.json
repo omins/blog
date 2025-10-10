@@ -1,0 +1,44 @@
+{
+  "layout": {
+    "defaultTitle": "Astro Blog v2",
+    "defaultDescription": "Locale-aware blogging experience powered by Astro.",
+    "nav": {
+      "home": "Home",
+      "posts": "Posts",
+      "tags": "Tags"
+    },
+    "footer": {
+      "copyright": "© {{year}} omin. Crafted with Astro.",
+      "docs": "Read the Astro docs"
+    }
+  },
+  "home": {
+    "greeting": "Hello",
+    "latest": {
+      "title": "Latest Posts",
+      "subtitle": "New stories land here as soon as they are added.",
+      "viewAll": "View all"
+    }
+  },
+  "posts": {
+    "heading": "All Posts",
+    "description": "Posts appear per locale. Use the language switcher above to change what you see."
+  },
+  "tags": {
+    "browse": "Browse tags",
+    "title": "Topics",
+    "description": "Choose a tag to filter posts that are available in this locale."
+  },
+  "tagDetail": {
+    "breadcrumb": "Tag",
+    "description": "Posts grouped by this tag."
+  },
+  "postMeta": {
+    "available": "Available:"
+  },
+  "themeToggle": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System theme"
+  }
+}
