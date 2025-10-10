@@ -48,6 +48,21 @@ Your content here...
 2. Use `translatedFrom` field to link translations
 3. The locale switcher will automatically show available translations
 
+## Updating Shared UI Copy
+
+Localized UI strings that appear outside of MDX content live in
+`src/locales/<locale>.json` and are wired into the runtime translator via
+`src/lib/i18n/translator.ts`.
+
+1. Add or update keys in each locale JSON file. Keep key sets consistent so
+   Playwright tests and fallback behavior stay aligned.
+2. If you add a new locale, register it in `SUPPORTED_LOCALES`, extend the
+   `translationDictionaries` object, and ensure the derived `resources` map keeps
+   TypeScript happy by casting through `unknown` (or using the supported locale
+   list) before assigning to `ResourceMap`.
+3. Run `pnpm check` to confirm type safety and schema validation, then rerun
+   any affected tests.
+
 ## Frontmatter Schema
 
 All fields defined in `src/content/config.ts`:
