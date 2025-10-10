@@ -1,3 +1,30 @@
 ---
-return Astro.redirect(`/en${new URL(Astro.request.url).search}`);
+import { DEFAULT_LOCALE } from "@/config/locales";
+
+const redirectHref = `/${DEFAULT_LOCALE}`;
+const pageTitle = "Redirecting…";
 ---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{pageTitle}</title>
+    <meta http-equiv="refresh" content={`0; url=${redirectHref}`} />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <p>
+      Redirecting to
+      <a href={redirectHref}>{redirectHref}</a>
+      …
+    </p>
+    <script is:inline>
+      const redirectPath = {JSON.stringify(redirectHref)};
+      const target = new URL(redirectPath, window.location.origin);
+      if (window.location.search) {
+        target.search = window.location.search;
+      }
+      window.location.replace(target.toString());
+    </script>
+  </body>
+</html>

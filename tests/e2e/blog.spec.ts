@@ -32,6 +32,24 @@ test.describe("omin.blog E2E", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("#");
   });
 
+  test("top navigation respects the active locale", async ({ page }) => {
+    for (const locale of ["en", "ko"] as const) {
+      await page.goto(`/${locale}/posts`, { waitUntil: "networkidle" });
+
+      await page.getByRole("link", { name: "Home" }).click();
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(new RegExp(`/${locale}/?(?:$|[?#])`));
+
+      await page.getByRole("link", { name: "Posts" }).click();
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(new RegExp(`/${locale}/posts/?(?:$|[?#])`));
+
+      await page.getByRole("link", { name: "Tags" }).click();
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(new RegExp(`/${locale}/tags/?(?:$|[?#])`));
+    }
+  });
+
   test("persists theme preference through the toggle", async ({ page }) => {
     await page.goto("/en", { waitUntil: "networkidle" });
 

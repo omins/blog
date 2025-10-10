@@ -2,6 +2,7 @@
 import { formatPublishedDate } from "@/lib/datetime";
 import { getLocaleLabel, type Locale } from "@/config/locales";
 import type { NormalizedBlogEntry } from "@/lib/content/posts";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 interface Props {
   post: NormalizedBlogEntry;
@@ -36,7 +37,7 @@ const tags = entry.data.tags ?? [];
       <ul class="flex flex-wrap gap-2 text-xs">
         {tags.map((tag: string) => (
           <li class="rounded-full border border-border-light px-2 py-1 text-slate-500 transition hover:border-accent/60 hover:text-accent dark:border-border-dark dark:text-slate-400">
-            <a href={`/${post.locale}/tags/${tag}`}>#{tag}</a>
+            <a href={getRelativeLocaleUrl(post.locale, `tags/${tag}`)}>#{tag}</a>
           </li>
         ))}
       </ul>

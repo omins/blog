@@ -9,6 +9,7 @@ import {
   type Locale,
 } from "@/config/locales";
 import { getPostsForLocale } from "@/lib/content/posts";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const prerender = true;
 
@@ -26,7 +27,7 @@ const posts = await getPostsForLocale(locale);
 const intro = getIntroForLocale(locale);
 const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
   (acc, candidate) => {
-    acc[candidate] = `/${candidate}`;
+    acc[candidate] = getRelativeLocaleUrl(candidate);
     return acc;
   },
   {} as Record<Locale, string | undefined>
@@ -76,7 +77,10 @@ const hasPosts = posts.length > 0;
             }
           </p>
         </div>
-        <a class="text-sm font-medium text-accent hover:underline" href={`/${locale}/posts`}>
+        <a
+          class="text-sm font-medium text-accent hover:underline"
+          href={getRelativeLocaleUrl(locale, "posts")}
+        >
           {locale === "ko" ? "전체 보기" : "View all"}
         </a>
       </header>

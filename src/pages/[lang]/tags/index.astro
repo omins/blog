@@ -2,6 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { LOCALE_FALLBACK_MESSAGES, SUPPORTED_LOCALES, type Locale } from "@/config/locales";
 import { getPostsForLocale } from "@/lib/content/posts";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 export const prerender = true;
 
@@ -24,7 +25,7 @@ const tagCounts = posts.reduce<Record<string, number>>((acc, post) => {
 const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>(
   (acc, candidate) => {
-    acc[candidate] = `/${candidate}/tags`;
+    acc[candidate] = getRelativeLocaleUrl(candidate, "tags");
     return acc;
   },
   {} as Record<Locale, string | undefined>
@@ -57,7 +58,7 @@ const localeLinks = SUPPORTED_LOCALES.reduce<Record<Locale, string | undefined>>
               <li>
                 <a
                   class="inline-flex items-center gap-2 rounded-full border border-border-light px-3 py-1 transition hover:border-accent/60 hover:text-accent dark:border-border-dark"
-                  href={`/${locale}/tags/${tag}`}
+                  href={getRelativeLocaleUrl(locale, `tags/${tag}`)}
                 >
                   <span>#{tag}</span>
                   <span class="text-xs text-slate-400 dark:text-slate-500">{count}</span>
